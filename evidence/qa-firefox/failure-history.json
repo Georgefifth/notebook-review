@@ -1,0 +1,8 @@
+{
+  "sourceCommit": "fa8ffdb31c5e538ca4b44f9716b782399ff76dec",
+  "step": "reviewer opens the real invited project link",
+  "failedAssertion": "#project-title contains Sample quality within 5000 ms",
+  "observedState": "Signed-in reviewer and invited project in sidebar; project title empty",
+  "repeat": "identical assertion, same timeout, passed",
+  "cause": "unconfirmed"
+}

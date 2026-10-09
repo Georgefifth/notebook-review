@@ -65,4 +65,23 @@ No new administrator credential is needed for this QA. Real email delivery/verif
 - `REVIEW_BROWSER=firefox REVIEW_QA=1 npm run test:live`: two existing test-account credentials from environment; uses real services plus explicitly labeled recovery fault injection. `REVIEW_LIVE_URL` selects local/public target; `REVIEW_EVIDENCE_PREFIX` distinguishes screenshot filenames. QA rejects admin account creation/deletion.
 - Pages CI verifies local Firefox before deployment and public Firefox after deployment. Live account tests remain an explicit local invocation, not a CI secret or mocked claim.
 
-Final deployment and execution totals are recorded below after release verification.
+## Final release verification
+
+Source commit: `fa8ffdb31c5e538ca4b44f9716b782399ff76dec`. [Pages release and public verification](https://github.com/Georgefifth/notebook-review/actions/runs/37916806847): verify-build, deploy and verify-public all succeeded. Public URL was opened again in Firefox; real cloud tasks also passed against that release. The Codex panel open request was queued by the app; browser acceptance used actual Playwright navigation.
+
+| Final acceptance execution | Pass | Fail | Blocked |
+| --- | ---: | ---: | ---: |
+| Local general Firefox scenarios | 13 | 0 | 0 |
+| Deployed general Firefox scenarios | 13 | 0 | 0 |
+| Local / deployed real two-account cloud tasks | 2 | 0 | 0 |
+| Inbox onboarding / native offline simulation | 0 | 0 | 2 |
+| Total | 28 | 0 | 2 |
+
+These are final scenario executions; compound scenarios contain several business assertions. They exclude historical failed attempts and the additional regression suites. Final regressions: 14 Firefox controlled-service browser tests, 14 Chromium controlled-service browser tests in CI, and 31 domain/PostgreSQL checks passed. Local/public generic Firefox scenarios also passed in the final release CI (17.7 / 16.8 seconds of automated total test duration, not human time).
+
+**Outstanding stability observation:** the first final-release cloud attempt exceeded the unchanged 5-second assertion while opening the reviewer's invited link. The user was signed in and the invitation listed, but the project content had not yet appeared. An identical repeat passed every original assertion, including discussion width and actual database outcomes. Cause is unconfirmed; no always-under-5-seconds loading or general reliability claim is made. This failed attempt is retained in `evidence/qa-firefox/failure-history.json`, not removed from the record. The final table describes the successful final verification, not all historical runs.
+
+The cloud tests record real password-grant Auth, REST/PostgreSQL permissions and Realtime, plus explicitly injected 503, aborted request and 401/controlled verify recovery. No inbox onboarding result is inferred. REST reads and writes after revocation were denied. Test projects/comments/invitations were scoped to synthetic fixtures and cleaned up; the two synthetic Auth accounts remain.
+
+Evidence: `evidence/qa-firefox/final-summary.json`, `cloud-local.json`, `cloud-deployed.json` and the release artifact `public-browser-evidence`. Screenshots inspected after deployment include `deployed-firefox-revision.png`, `deployed-firefox-responsive-390.png`, `deployed-service-outage.png`, `deployed-session-recovery.png` and `deployed-signed-in-mobile.png`. No unresolved reproduced functional blocker remains in the successfully exercised review tasks; new-user acceptance remains conditional on real email verification.
+

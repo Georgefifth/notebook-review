@@ -1,0 +1,39 @@
+{
+  "sourceCommit": "fa8ffdb31c5e538ca4b44f9716b782399ff76dec",
+  "releaseRun": "https://github.com/Georgefifth/notebook-review/actions/runs/37916806847",
+  "release": "success",
+  "acceptance": {
+    "pass": 28,
+    "fail": 0,
+    "blocked": 2,
+    "generalLocal": 13,
+    "generalDeployed": 13,
+    "realCloudLocal": 1,
+    "realCloudDeployed": 1
+  },
+  "regressions": {
+    "firefoxMockedService": 14,
+    "chromiumMockedService": 14,
+    "domainAndPostgres": 31
+  },
+  "publicFirefoxStats": {
+    "startTime": "2026-10-09T10:21:00.342Z",
+    "duration": 16775.963,
+    "expected": 13,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "observedFailedCloudAttemptsAfterRelease": 1,
+  "identicalCloudRepeatPassed": true,
+  "blocked": [
+    "real email inbox OTP onboarding",
+    "native Firefox offline emulation"
+  ],
+  "remainingObservations": [
+    "One reviewer-link load exceeded the unchanged 5-second assertion; identical repeat passed; cause unconfirmed",
+    "Supabase/Cloudflare invalid-domain cookie diagnostics",
+    "Long stacked mobile revision and independent desktop discussion scrolling"
+  ],
+  "accountDeletion": "not attempted"
+}
