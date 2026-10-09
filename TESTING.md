@@ -30,7 +30,7 @@ The English demo has a new snapshot fingerprint because bundled example text cha
 
 ## Unverified and remaining limits
 
-- Supabase/SMTP are not configured. Real email delivery, cross-device invited reviews and live revocation require the checks in DEPLOYMENT.md.
+- Supabase is configured and live two-user collaboration/revocation passed. Actual email OTP delivery still needs inbox acceptance in DEPLOYMENT.md.
 - No real-user completion-time, task-success, retention, payment or competitive-advantage evidence.
 - Markdown is a safe subset. Full Notebook fidelity and end-to-end rendering of 10,000 cells are not established.
 - Competitor public-browser attempts were limited by network conditions. Their authenticated workflows and performance were not measured.
@@ -39,4 +39,10 @@ The English demo has a new snapshot fingerprint because bundled example text cha
 
 The official Realtime client is bundled with the static frontend. Lifecycle tests cover project-scoped subscriptions, excluding DELETE events, reconnect reconciliation and stopping during token refresh. PostgreSQL tests apply the additive migration twice, retain existing feedback/publications, deny nonmembers and verify revoked reads/writes.
 
-The live script is ready but has not been run: Publishable Key and connected administration are pending. Do not interpret mocked WebSockets, real local PostgreSQL or a successful Pages deployment as proof of live cloud collaboration or email delivery.
+The live script passed against the public GitHub Pages URL and real Supabase project on 2026-10-09 with two distinct Auth user IDs and isolated browser contexts. Passed: owner shares a Notebook; reviewer has no access before invitation; anonymous access denied; invited comments synchronize without refresh; revisions synchronize without refresh; both drafts survive; acknowledgements synchronize; reviewer cannot edit the Notebook; revoked reads/writes denied. The script recorded no page errors.
+
+Real password grants established the sessions; this is not evidence of email OTP delivery. The synthetic accounts were seeded through authorized database administration rather than through inbox confirmation. Production email confirmation was not disabled. The synthetic-address OTP request returned email_address_invalid; no inbox delivery result is claimed.
+
+A real INSERT RETURNING failure was fixed: a STABLE helper cannot identify the newly inserted row within the same statement. The SELECT policy now directly admits the current owner before the collaborator lookup. The PostgreSQL regression checks successful owner RETURNING and stranger denial. A second regression models Supabase default function grants and checks that anonymous helper execution and authenticated trigger-function execution are revoked.
+
+The test project, comments and invitations were removed. Account/session cleanup was cancelled at the platform SQL confirmation; two synthetic test users remain. Do not claim full cleanup. All three public business tables have RLS, and the Realtime publication contains only projects/comments. The applied migration history matches the source filenames.

@@ -32,10 +32,16 @@ test('PostgreSQL permissions enforce invitations, immutable anchors and optimist
       // Model Supabase explicit default grants, which differ from plain PostgreSQL.
       await db.exec('grant execute on all functions in schema public to anon, authenticated');
       await db.exec('create table public.unrelated(id integer); create publication supabase_realtime for table public.unrelated;');
-      const migration=await readFile(new URL('../supabase/migrations/20261009000200_review_realtime.sql',import.meta.url),'utf8');
+      const migration=await readFile(new URL('../supabase/migrations/20261009085147_review_realtime.sql',import.meta.url),'utf8');
       await db.exec(migration); await db.exec(migration);
-      const hardening=await readFile(new URL('../supabase/migrations/20261009085340_review_private_permissions.sql',import.meta.url),'utf8');
+      const hardening=await readFile(new URL('../supabase/migrations/20261009085456_review_private_permissions.sql',import.meta.url),'utf8');
       await db.exec(hardening);await db.exec(hardening);
+      await db.exec(await readFile(new URL('../supabase/migrations/20261009085742_review_rls_indexes.sql',import.meta.url),'utf8'));
+      await db.exec(await readFile(new URL('../supabase/migrations/20261009090527_review_insert_returning.sql',import.meta.url),'utf8'));
+      const returning=await as(owner,'owner@example.org',()=>db.query('insert into public.review_projects(owner_id,title,base_notebook,snapshot_id) values($1,$2,$3,$4) returning id',[owner,'Returned review',notebook,snapshot]));
+      assert.equal(returning.rows.length,1);
+      assert.equal((await as(stranger,'stranger@example.org',()=>db.query('select * from public.review_projects where id=$1',[returning.rows[0].id]))).rows.length,0);
+      await as(owner,'owner@example.org',()=>db.query('delete from public.review_projects where id=$1',[returning.rows[0].id]));
       const privileges=(await db.query("select has_function_privilege('anon','review_private.review_can_access(uuid)','EXECUTE') as anon_execute, has_function_privilege('authenticated','review_private.review_comment_guard()','EXECUTE') as guard_execute")).rows[0];
       assert.equal(privileges.anon_execute,false);assert.equal(privileges.guard_execute,false);
       assert.equal((await db.query('select count(*)::int as n from public.review_comments')).rows[0].n,before.rows[0].n);

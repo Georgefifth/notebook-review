@@ -1,0 +1,10 @@
+begin;
+create index if not exists review_projects_owner_idx on public.review_projects(owner_id);
+create index if not exists review_comments_author_idx on public.review_comments(author_id);
+alter policy projects_create on public.review_projects with check (owner_id = (select auth.uid()));
+alter policy projects_update on public.review_projects using (owner_id = (select auth.uid())) with check (owner_id = (select auth.uid()));
+alter policy projects_delete on public.review_projects using (owner_id = (select auth.uid()));
+alter policy members_read on public.review_members using (review_private.review_is_owner(project_id) or email = lower((select auth.jwt())->>'email'));
+alter policy comments_create on public.review_comments with check (review_private.review_can_access(project_id) and author_id = (select auth.uid()));
+alter policy comments_update on public.review_comments using (review_private.review_can_access(project_id) and (author_id = (select auth.uid()) or review_private.review_is_owner(project_id))) with check (review_private.review_can_access(project_id) and (author_id = (select auth.uid()) or review_private.review_is_owner(project_id)));
+commit;

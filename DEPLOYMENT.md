@@ -12,8 +12,8 @@ Without repository variables, `config.json` contains `{"configured":false}`. Do 
 
 ## Enable online collaboration
 
-1. Create a dedicated Supabase project and apply `supabase/migrations/20261009000100_review_baseline.sql`, then `supabase/migrations/20261009000200_review_realtime.sql`. The baseline requires a new database.
-2. For a database already using the previous schema, apply only `supabase/migrations/20261009000200_review_realtime.sql`. This additive migration preserves comments and adds revision acknowledgement, protects acknowledgement with a project-row lock, and registers only the project/comment tables with the Realtime publication. Existing publication tables are preserved. Do not recreate tables.
+1. For a new Supabase project, apply every file in `supabase/migrations/` in filename order. Five migrations create the baseline, enable Realtime, move helper functions into a private schema, improve RLS/indexes, and fix owner INSERT RETURNING. Local filenames match the actual cloud migration history.
+2. For an existing installation, skip already-applied migrations and apply only missing upgrades. Do not recreate tables or reset the database. The upgrades retain Notebook, comment and membership data.
 3. Obtain the Project URL and publishable key (or legacy public anon JWT). The frontend needs no service_role key, database password or SMTP password.
 4. In GitHub Settings → Secrets and variables → Actions → Variables, add:
 
@@ -35,7 +35,7 @@ The legacy public key can use `SUPABASE_ANON_KEY` instead. These are public brow
 - Reviewer signs in with that address and posts a comment; owner receives it through Realtime without manual refresh. Both screens show Live updates.
 - Owner uploads a revision; reviewer receives it automatically, checks changes and confirms the revision reviewed. Another changed revision requires another check.
 - An uninvited third email cannot access the review. Revoking an invitation rejects subsequent reads and writes.
-- A project reference and URL have been provided, but database execution, Publishable Key configuration and live acceptance are still pending. Mock Auth/REST/WebSocket tests cannot substitute for these checks.
+- Database migrations, public deployment variables and real two-user Auth/REST/RLS/Realtime acceptance were completed on 2026-10-09. Email OTP inbox delivery remains unverified. Mock tests alone do not establish live functionality.
 
 ## Vercel alternative and local development
 
@@ -54,3 +54,13 @@ Provide the public configuration above, plus `REVIEW_OWNER_EMAIL`, `REVIEW_OWNER
 The script uses real password grants to initialize test sessions. It does **not** prove email OTP delivery. Separately verify Send code → inbox receipt → Verify and sign in with two real inboxes. Configure SMTP and the `{{ .Token }}` email template first. A publishable key alone cannot apply database migrations or administer test users.
 
 Realtime subscriptions include INSERT/UPDATE only and select small identifier/version payloads. Events trigger authorized REST reads; the application does not use event rows as permission evidence. Backup reconciliation detects deleted projects and revoked access within 30 seconds while the tab is visible. Database reads/writes are denied immediately on revocation; already downloaded data cannot be recalled.
+
+## Current cloud status — 2026-10-09
+
+The five migrations have been applied to `kdgigrfuksaedyureaxe`. GitHub Actions variables provide the Project URL and publishable key; neither is hardcoded in application source. Auth owns user identities; private projects, comments and invited-email relations use PostgreSQL with RLS. Anonymous users have no table access, and internal functions live in non-exposed `review_private`.
+
+Two real, temporary confirmed Auth accounts in separate browser contexts passed the public-site collaboration flow. Those synthetic accounts were provisioned through authorized database administration; password grants established real sessions without sending email. The test project, comments and invitations were removed. The separate request to delete the two test accounts was cancelled at the platform confirmation, so the accounts remain. No pre-existing account existed before these tests. They can be inspected under Authentication → Users; their metadata purpose is `notebook-review-e2e`.
+
+Email auth is enabled and email confirmation remains required. A request to the reserved synthetic address was rejected as `email_address_invalid`; this does not establish whether SMTP is correctly configured. Verify SMTP, the Magic Link template containing `{{ .Token }}`, and actual inbox receipt before promising email-code onboarding. Configure Site URL as `https://georgefifth.github.io/notebook-review/`. No service-role key is required by the deployed frontend.
+
+Security advisors found no remaining exposed business-table/function issues after hardening. They additionally reported disabled leaked-password protection ([setting documentation](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)); the production UI uses email codes. Performance advisors prompted indexes and cached Auth expressions. Fresh unused-index notices are not evidence that the indexes should be removed.

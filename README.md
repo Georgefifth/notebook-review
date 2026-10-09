@@ -44,7 +44,7 @@ See PRODUCT.md for acceptance criteria and proposed user-validation targets.
 
 [GitHub Pages demo](https://georgefifth.github.io/notebook-review/) · [Repository](https://github.com/Georgefifth/notebook-review)
 
-The public site currently runs in local-demo mode. Supabase and SMTP have not been configured; it does not sync feedback between browsers. Read DEPLOYMENT.md to apply migrations and configure the online workflow. The project URL alone does not enable cloud access.
+The public site is configured for Supabase cloud collaboration. Database migrations and real two-user Auth/REST/RLS/Realtime acceptance passed. Local import and the synthetic demo remain available. Actual email OTP inbox delivery still requires SMTP/template verification; see DEPLOYMENT.md.
 
 Recent improvements: safe common Markdown and tables, optional line diff, feedback/content search, pending-feedback navigation, mobile return to context, explicit revision acknowledgement, indexed comparison, deduplicated Auth refresh, automatic Realtime comment/revision updates and Pages subpath support. No notebook execution or AI service.
 

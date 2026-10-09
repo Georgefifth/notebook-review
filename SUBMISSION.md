@@ -18,7 +18,7 @@ A static JavaScript frontend runs on GitHub Pages. Optional email-code authentic
 
 ## Finished versus planned
 
-The public demo supports local import, feedback, revision comparison and export. Online collaboration code, database permissions and automatic Realtime updates have automated tests, but live Supabase configuration and SMTP acceptance remain pending. The public demo does not synchronize between browsers. Real email delivery and live multi-user acceptance remain unverified.
+The public demo supports local import, feedback, revision comparison and export. The frontend is connected to a real Supabase backend. Two independent authenticated users passed live invitation, comment, revision, acknowledgement and revocation tests on the public site. Email OTP inbox delivery remains unverified; test sessions used real password grants for temporary synthetic accounts. The example stays local until explicitly shared.
 
 This is a review prototype, not a scientific validation system. Examples are synthetic. There is no clinical outcome evidence, proven time saving or validated market advantage. User testing with analyst–reviewer teams is the next validation step.
 

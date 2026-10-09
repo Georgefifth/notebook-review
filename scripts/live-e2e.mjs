@@ -25,7 +25,7 @@ async function account(kind) {
   const user=await request('/auth/v1/admin/users',{adminRequest:true,token:admin,method:'POST',body:{email,password,email_confirm:true,user_metadata:{purpose:'notebook-review-e2e'}}});
   created.push(user.id);return{email,password};
 }
-const failures=[];
+const failures=[],pages=[];
 try {
   const owner=await account('OWNER'),reviewer=await account('REVIEWER');
   ownerSession=await request('/auth/v1/token?grant_type=password',{method:'POST',body:owner});
@@ -36,7 +36,7 @@ try {
   async function pageFor(session) {
     const context=await browser.newContext();
     await context.addInitScript(value=>sessionStorage.setItem('nr-session',JSON.stringify(value)),session);
-    const page=await context.newPage();page.on('pageerror',e=>failures.push(e.message));await page.goto(site);
+    const page=await context.newPage();pages.push(page);page.on('pageerror',e=>failures.push(e.message));await page.goto(site);
     const deployed=await page.evaluate(async()=>await(await fetch(new URL('./config.json',location.href))).json());
     assert.equal(deployed.url,config.url);assert.equal(deployed.configured,true);return page;
   }
@@ -67,6 +67,9 @@ try {
   await reviewerPage.getByRole('button',{name:'Refresh review',exact:true}).click();await expect(reviewerPage.locator('#workspace')).toBeHidden();
   assert.deepEqual(failures,[]);
   console.log(JSON.stringify({site,project:config.url,passed:true,independentUsers:2,services:'real Auth password grants, PostgreSQL REST/RLS and Realtime',tested:['uninvited and anonymous denial','owner sharing','invited comments without refresh','revision without refresh','draft preservation','acknowledgement','reviewer cannot edit notebook','revocation read/write denial'],emailOTPDelivery:'not tested; dedicated test accounts use password grants'}));
+} catch(error) {
+  for (const page of pages) { console.error('Live UI notice: '+await page.locator('#notice').textContent().catch(()=>'')); const id=new URL(page.url()).searchParams.get('project'); if (!projectId && id && page===pages[0]) projectId=id; }
+  throw error;
 } finally {
   await browser?.close();
   if(projectId&&ownerSession) { try {await request('/rest/v1/review_projects?id=eq.'+projectId,{token:ownerSession.access_token,method:'DELETE'});}catch{console.error('Cleanup required for test project '+projectId);} }
