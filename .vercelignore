@@ -1,0 +1,8 @@
+node_modules/
+npm-cache/
+vercel-cache/
+test/
+test-results/
+playwright-report/
+.env
+.env.*
