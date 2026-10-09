@@ -4,7 +4,7 @@ An online notebook review MVP: import an immutable snapshot, invite by email, co
 
 ## Run
 
-Use Node 22 or newer. There are no runtime npm dependencies.
+Use Node 22 or newer. The official Supabase Realtime client is bundled locally; no CDN is required. Run `npm ci` before starting.
 
 ```bash
 node dev-server.mjs
@@ -16,7 +16,7 @@ Open http://127.0.0.1:4173. Without Supabase configuration, the site explicitly 
 
 See [DEPLOYMENT.md](DEPLOYMENT.md). You need a Supabase project, this schema applied to that NEW project, a working Auth email OTP template and SMTP, plus the public Supabase URL/key. Use GitHub Pages or Vercel for the frontend. Ordinary reviewers need only their invited email.
 
-Local notebook imports stay local until choosing "Share online". Comments on a demo remain local and are not silently uploaded as another identity. Online comments poll every eight seconds; explicitly refresh to fetch a newly uploaded revision. The user sends invitation links; the app records access permissions but does not send invitation emails.
+Local notebook imports stay local until choosing "Share online". Comments on a demo remain local and are not silently uploaded as another identity. Online comments and revisions synchronize through Supabase Realtime, with 30-second backup reconciliation. Background updates preserve your current cell and feedback draft. The user sends invitation links; the app records access permissions but does not send invitation emails.
 
 ## Tests
 
@@ -44,8 +44,8 @@ See PRODUCT.md for acceptance criteria and proposed user-validation targets.
 
 [GitHub Pages demo](https://georgefifth.github.io/notebook-review/) · [Repository](https://github.com/Georgefifth/notebook-review)
 
-The public site currently runs in local-demo mode. Supabase and SMTP have not been configured; it does not sync feedback between browsers. Read DEPLOYMENT.md to enable the existing online workflow.
+The public site currently runs in local-demo mode. Supabase and SMTP have not been configured; it does not sync feedback between browsers. Read DEPLOYMENT.md to apply migrations and configure the online workflow. The project URL alone does not enable cloud access.
 
-Recent improvements: safe common Markdown and tables, optional line diff, feedback/content search, pending-feedback navigation, mobile return to context, explicit revision acknowledgement, indexed comparison, deduplicated Auth refresh and Pages subpath support. No notebook execution or AI service.
+Recent improvements: safe common Markdown and tables, optional line diff, feedback/content search, pending-feedback navigation, mobile return to context, explicit revision acknowledgement, indexed comparison, deduplicated Auth refresh, automatic Realtime comment/revision updates and Pages subpath support. No notebook execution or AI service.
 
 Research and limitations: COMPETITIVE_RESEARCH.md. Priorities, acceptance and before/after evidence: IMPROVEMENTS.md. Verification: TESTING.md. Existing Supabase deployments need database/migrate-v2.sql; new projects use schema.sql.

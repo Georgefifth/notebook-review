@@ -5,6 +5,8 @@ on:
     paths:
       - 'public/**'
       - 'database/**'
+      - 'supabase/**'
+      - 'client/**'
       - 'test/**'
       - 'scripts/**'
       - '*.mjs'

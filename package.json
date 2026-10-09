@@ -7,13 +7,18 @@
     "start": "node dev-server.mjs",
     "test": "node --test test/*.test.mjs",
     "test:browser": "playwright test",
+    "test:live": "node scripts/live-e2e.mjs",
     "build": "node build.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",
-    "@playwright/test": "1.64.0"
+    "@playwright/test": "1.64.0",
+    "esbuild": "^0.28.2"
   },
   "engines": {
     "node": "22.x"
+  },
+  "dependencies": {
+    "@supabase/realtime-js": "^2.117.3"
   }
 }

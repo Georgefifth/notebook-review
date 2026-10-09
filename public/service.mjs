@@ -5,7 +5,7 @@ export class ReviewAPI {
     const headers = { apikey: this.config.publicKey, 'Content-Type': 'application/json' };
     if (authenticated && this.session) headers.Authorization = 'Bearer ' + this.session.access_token;
     const response = await fetch(this.config.url + '/auth/v1/' + path, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(20000) });
-    const data = await response.json();
+    const data = response.status === 204 ? {} : await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.msg || data.error_description || data.message || 'Email sign-in is temporarily unavailable.');
     return data;
   }

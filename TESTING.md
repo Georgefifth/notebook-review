@@ -6,9 +6,9 @@ Date: 2026-10-09. Local Node 26.7.0; the GitHub workflow targets Node 22.
 
 - 10 core/configuration cases: snapshot normalization, stable IDs, conservative legacy matching, invalid formats, multiline output and public-key restrictions.
 - 2 diff cases: repeated/empty/replaced lines reconstruct the original texts; large diffs use bounded work.
-- 15 PostgreSQL scenarios using PGlite with actual RLS and triggers: owner/reviewer/stranger/anonymous permissions, revocation, author identity, immutable baseline and anchors, optimistic updates, revision acknowledgement and additive migration.
-- 9 Chromium workflows: local feedback/export/drafts, hostile markup, mocked two-user handoff and acknowledgement, mobile layout, invalid imports, safe Markdown/URLs/images, search and mobile return, example differences, concurrent token refresh and sign-out races.
-- Auth/REST browser tests use mocks. No real email is sent. Neither database tests nor mocked API tests establish live Supabase functionality.
+- 16 PostgreSQL scenarios using PGlite with actual RLS and triggers: owner/reviewer/stranger/anonymous permissions, revocation, author identity, immutable baseline and anchors, optimistic updates, revision acknowledgement and additive migrations retaining data and unrelated publication tables.
+- 10 Chromium workflows: local feedback/export/drafts, hostile markup, mocked two-user handoff and acknowledgement, mobile layout, invalid imports, safe Markdown/URLs/images, search and mobile return, example differences, concurrent token refresh and sign-out races, plus actual bundled-client WebSocket handling in two isolated mocked browser contexts, automatic revisions and retained drafts.
+- Auth/REST/WebSocket browser tests use mocks. No real email is sent. Neither database tests nor mocked API tests establish live Supabase functionality.
 
 ## Previously recorded measurements
 
@@ -34,3 +34,9 @@ The English demo has a new snapshot fingerprint because bundled example text cha
 - No real-user completion-time, task-success, retention, payment or competitive-advantage evidence.
 - Markdown is a safe subset. Full Notebook fidelity and end-to-end rendering of 10,000 cells are not established.
 - Competitor public-browser attempts were limited by network conditions. Their authenticated workflows and performance were not measured.
+
+## Cloud implementation verification
+
+The official Realtime client is bundled with the static frontend. Lifecycle tests cover project-scoped subscriptions, excluding DELETE events, reconnect reconciliation and stopping during token refresh. PostgreSQL tests apply the additive migration twice, retain existing feedback/publications, deny nonmembers and verify revoked reads/writes.
+
+The live script is ready but has not been run: Publishable Key and connected administration are pending. Do not interpret mocked WebSockets, real local PostgreSQL or a successful Pages deployment as proof of live cloud collaboration or email delivery.

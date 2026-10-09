@@ -10,8 +10,8 @@ The user chose online collaboration and permitted choosing a host. Use email one
 1. Import the base `.ipynb`. Preview locally before any upload.
 2. Sign in with an email verification code. Choose "Share online" to upload the exact base snapshot and create a project.
 3. Add collaborator email addresses and copy the project link. The owner shares it through an existing channel.
-4. Reviewer signs in with their invited email, reads the snapshot and posts cell comments. Comments synchronize every 8 seconds, or on refresh.
-5. Owner uploads a revised notebook. Compare source and output changes, positions, removals and added cells. Reviewers use "Refresh review" to fetch the revision.
+4. Reviewer signs in with their invited email, reads the snapshot and posts cell comments. Comments and revisions synchronize via Realtime, with 30-second backup reconciliation and manual refresh.
+5. Owner uploads a revised notebook. Compare source and output changes, positions, removals and added cells. Reviewers receive revisions automatically; "Refresh review" retries synchronization without clearing drafts.
 6. Owner or original commenter closes/reopens feedback after checking it. Previously closed comments on changed/unlinked content still show a recheck warning.
 7. Export JSON feedback as an independent record. The export is not a backup of all membership/auth/project revision data.
 
@@ -33,7 +33,7 @@ Notebook v4, max 5 MB / 10,000 cells. Accept string/list source. Preview common 
 - Drafts survive background synchronization; switching cells with a draft asks the user to send/clear it first.
 
 ## Architecture
-A static dependency-free browser application calls Supabase Auth/REST directly with a public key and user JWT. RLS and SQL triggers enforce access and anchoring. Notebook records are private JSONB rows; no public storage bucket. GitHub Pages serves static assets and a generated public-only config.json; Vercel is an alternative host. CSP restricts scripts and media; the default deployment supports hosted `*.supabase.co` URLs.
+A static browser application with the locally bundled official Realtime client calls Supabase Auth/REST directly with a public key and user JWT. RLS and SQL triggers enforce access and anchoring. Notebook records are private JSONB rows; no public storage bucket. GitHub Pages serves static assets and a generated public-only config.json; Vercel is an alternative host. CSP restricts scripts and media; the default deployment supports hosted `*.supabase.co` URLs.
 
 ## Validation
 Run domain and PostgreSQL RLS tests. Browser task tests use mocked Auth/REST and do not establish live email/database functionality. A live smoke test is required after applying schema and configuring Supabase + SMTP.

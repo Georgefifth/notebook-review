@@ -10,7 +10,7 @@ Import an existing Notebook, preview saved results, leave cell-specific feedback
 
 ## How we built it
 
-A static JavaScript frontend runs on GitHub Pages. Optional email-code authentication and private collaboration use Supabase Auth and PostgreSQL row-level security. Stable cell IDs anchor comments; older Notebooks without IDs use conservative matching. Baseline fingerprints and version-bound acknowledgements protect review context.
+A static JavaScript frontend runs on GitHub Pages. Optional email-code authentication and private collaboration use Supabase Auth, PostgreSQL row-level security and Realtime. Stable cell IDs anchor comments; older Notebooks without IDs use conservative matching. Baseline fingerprints and version-bound acknowledgements protect review context.
 
 ## Working demo
 
@@ -18,7 +18,7 @@ A static JavaScript frontend runs on GitHub Pages. Optional email-code authentic
 
 ## Finished versus planned
 
-The public demo supports local import, feedback, revision comparison and export. Online collaboration code and database permissions have automated tests, but no live Supabase or SMTP service is configured. The public demo does not synchronize between browsers. Real email delivery and live multi-user acceptance remain unverified.
+The public demo supports local import, feedback, revision comparison and export. Online collaboration code, database permissions and automatic Realtime updates have automated tests, but live Supabase configuration and SMTP acceptance remain pending. The public demo does not synchronize between browsers. Real email delivery and live multi-user acceptance remain unverified.
 
 This is a review prototype, not a scientific validation system. Examples are synthetic. There is no clinical outcome evidence, proven time saving or validated market advantage. User testing with analyst–reviewer teams is the next validation step.
 

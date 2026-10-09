@@ -1,13 +1,15 @@
 import { cp, mkdir, rm, writeFile, readFile } from 'node:fs/promises';
 import { publicConfig } from './config.mjs';
+import { realtimeBundle } from './bundle.mjs';
 const config = publicConfig();
 if ((process.env.SUPABASE_URL || process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY) && !config.configured) throw new Error('Supabase public configuration is incomplete or unsafe. Build stopped.');
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist', { recursive: true });
 await cp('public', 'dist', { recursive: true });
+await writeFile('dist/realtime-sdk.mjs', await realtimeBundle());
 await writeFile('dist/config.json', JSON.stringify(config));
 await writeFile('dist/.nojekyll', '');
 const html = await readFile('dist/index.html', 'utf8');
-const csp = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'" + (config.configured ? ' ' + config.url : '') + "; object-src 'none'; base-uri 'none'; form-action 'self'";
+const csp = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'" + (config.configured ? ' ' + config.url + ' ' + config.url.replace('https:', 'wss:') : '') + "; object-src 'none'; base-uri 'none'; form-action 'self'";
 await writeFile('dist/index.html', html.replace('<head>', '<head><meta http-equiv="Content-Security-Policy" content="' + csp + '"><meta name="referrer" content="no-referrer">'));
 console.log('Static frontend built in dist/ (' + (config.configured ? 'public Supabase configuration included' : 'local demo only') + ')');

@@ -13,23 +13,45 @@ function fixture() {
   return { project, comments, members };
 }
 async function mockBackend(page, store) {
+  store.sockets ||= new Set();
+  store.emit = (table, type) => { for (const connection of store.sockets) connection.emit(table, type); };
+  await page.routeWebSocket('wss://testing.supabase.co/**', socket => {
+    let topic='',joinRef=null, filters=[],arrayProtocol=false;
+    const connection={ emit(table,type) {
+      const ids=filters.filter(f=>f.table===table&&f.event===type).map(f=>f.id);
+      if(ids.length) { const payload={ids,data:{schema:'public',table,type,columns:[],record:{},old_record:{},commit_timestamp:new Date().toISOString()}};socket.send(JSON.stringify(arrayProtocol?[joinRef,null,topic,'postgres_changes',payload]:{topic,event:'postgres_changes',payload,ref:null,join_ref:joinRef})); }
+    }};
+    store.sockets.add(connection);
+    socket.onClose(()=>store.sockets.delete(connection));
+    socket.onMessage(raw=>{
+      const decoded=JSON.parse(String(raw));
+      const array=Array.isArray(decoded);arrayProtocol=array;
+      const message=array?{join_ref:decoded[0],ref:decoded[1],topic:decoded[2],event:decoded[3],payload:decoded[4]}:decoded;
+      const send=reply=>socket.send(JSON.stringify(array?[reply.join_ref,reply.ref,reply.topic,reply.event,reply.payload]:reply));
+      if(message.event==='phx_join') {
+        topic=message.topic;joinRef=message.join_ref;
+        filters=message.payload.config.postgres_changes.map((f,i)=>({...f,id:i+1}));
+        send({topic,event:'phx_reply',payload:{status:'ok',response:{postgres_changes:filters}},ref:message.ref,join_ref:joinRef});
+      } else if(message.event==='heartbeat'||message.event==='phx_leave') send({...message,event:'phx_reply',payload:{status:'ok',response:{}}});
+    });
+  });
   await page.route('https://testing.supabase.co/**', async route => {
     const request = route.request(), url = new URL(request.url()), body = request.postDataJSON?.() || {}, method = request.method(); let data = {};
     if (url.pathname === '/auth/v1/otp') data = {};
     else if (url.pathname === '/auth/v1/verify') { const owner = body.email === 'owner@example.org'; data = { access_token: owner ? 'owner-token' : 'reviewer-token', refresh_token: 'refresh', expires_in: 3600, user: { id: owner ? ownerId : reviewerId, email: body.email } }; }
-    else if (url.pathname === '/auth/v1/logout') data = {};
+    else if (url.pathname === '/auth/v1/logout') { await route.fulfill({status:204}); return; }
     else if (url.pathname.includes('/rest/v1/')) {
       const owner = request.headers().authorization === 'Bearer owner-token';
       const table = url.pathname.split('/').at(-1);
       if (table === 'review_projects') {
         if (method === 'GET') data = [store.project];
         if (method === 'POST') { Object.assign(store.project,body); data=[store.project]; }
-        if (method === 'PATCH') { Object.assign(store.project,body); store.project.version++; data=[store.project]; }
+        if (method === 'PATCH') { Object.assign(store.project,body); store.project.version++; data=[store.project]; store.emit('review_projects','UPDATE'); }
       }
       if (table === 'review_comments') {
         if (method === 'GET') data = store.comments;
-        if (method === 'POST') { const comment={...body,id:crypto.randomUUID(),author_email:owner?'owner@example.org':'reviewer@example.org',created_at:new Date().toISOString(),resolved:false,version:1}; store.comments.push(comment); data=[comment]; }
-        if (method === 'PATCH') { const id=url.searchParams.get('id').slice(3), c=store.comments.find(c=>c.id===id); Object.assign(c,body); c.version++; data=[c]; }
+        if (method === 'POST') { const comment={...body,id:crypto.randomUUID(),author_email:owner?'owner@example.org':'reviewer@example.org',created_at:new Date().toISOString(),resolved:false,version:1}; store.comments.push(comment); data=[comment]; store.emit('review_comments','INSERT'); }
+        if (method === 'PATCH') { const id=url.searchParams.get('id').slice(3), c=store.comments.find(c=>c.id===id); Object.assign(c,body); c.version++; data=[c]; store.emit('review_comments','UPDATE'); }
       }
       if (table === 'review_members') { if(method==='POST')store.members.push(body); if(method==='DELETE')store.members.splice(0); data=store.members; }
     }
@@ -87,4 +109,20 @@ test('parallel requests share token refresh and logout cannot resurrect a sessio
     api.auth=()=>{calls++;return new Promise(resolve=>{complete=resolve;});};const first=api.token(),second=api.token();complete({access_token:'new',refresh_token:'next',expires_in:3600,user:{id:'u'}});const values=await Promise.all([first,second]);
     api.session={access_token:'old',refresh_token:'refresh',expires_at:1,user:{id:'u'}};const pending=api.token().catch(e=>e.message);api.saveSession(null);complete({access_token:'unexpected',refresh_token:'next',expires_in:3600,user:{id:'u'}});await pending;return{calls,values,session:api.session};
   });expect(result.calls).toBe(2);expect(result.values).toEqual(['new','new']);expect(result.session).toBeNull();
+});
+
+test('Realtime updates two browser sessions without refresh and preserves draft; revocation clears private view', async ({page,browser})=>{
+  const store=fixture();await mockBackend(page,store);await page.goto('/');await login(page,'owner@example.org');await page.locator('.project-item').first().click();
+  await page.locator('#cell-1').getByRole('button',{name:'Discuss',exact:true}).click();await page.getByLabel('Your feedback').fill('Unsent owner draft');
+  await expect(page.locator('#sync-status')).toHaveText('Live updates');
+  const context=await browser.newContext();const reviewer=await context.newPage();await mockBackend(reviewer,store);await reviewer.goto('http://127.0.0.1:4185/');await login(reviewer,'reviewer@example.org');await reviewer.locator('.project-item').first().click();await expect(reviewer.locator('#sync-status')).toHaveText('Live updates');
+  await reviewer.locator('#cell-1').getByRole('button',{name:'Discuss',exact:true}).click();await reviewer.getByLabel('Your feedback').fill('Realtime question');await reviewer.getByRole('button',{name:'Post feedback'}).click();
+  await expect(page.locator('#comments')).toContainText('Realtime question');await expect(page.getByLabel('Your feedback')).toHaveValue('Unsent owner draft');
+  await reviewer.getByLabel('Your feedback').fill('Unsent reviewer draft');
+  await page.locator('#revision-file').setInputFiles({name:'revision.ipynb',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(revision))});
+  await expect(reviewer.locator('#cell-1')).toContainText('Output changed');await expect(reviewer.getByLabel('Your feedback')).toHaveValue('Unsent reviewer draft');await expect(reviewer.locator('#discussion-title')).toHaveText('Cell 2');
+  // Independently tested PostgreSQL RLS performs the denial; this fixture tests UI handling.
+  await reviewer.route('https://testing.supabase.co/rest/v1/review_projects?**',r=>r.fulfill({status:200,contentType:'application/json',body:'[]'}));
+  await reviewer.getByRole('button',{name:'Refresh review',exact:true}).click();await expect(reviewer.locator('#workspace')).toBeHidden();await expect(reviewer.locator('#notice')).toContainText('revoked');expect(await reviewer.locator('#comment-body').inputValue()).toBe('Unsent reviewer draft');
+  await context.close();
 });

@@ -17,7 +17,10 @@ Help an analyst and a non-Git collaborator review a notebook together without mo
 - `database/schema.sql`: PostgreSQL RLS plus guards for immutable snapshots and verified comment anchors.
 - `config.mjs` and generated `dist/config.json`: expose only public Supabase URL and publishable/anon key; `api/config.js` remains a Vercel option. Never expose service-role/secret credentials.
 - `dev-server.mjs`: local preview; `build.mjs`: static deployment at root or repository subpath; `.github/workflows/pages.yml`: tested Pages release; `vercel.json`: optional Vercel deployment.
-- No runtime dependencies, AI service, notebook kernel, Git integration or realtime infrastructure. Comments poll every 8 seconds; users explicitly refresh project revisions.
+- Use the official @supabase/realtime-js client, bundled locally with esbuild. No AI service, notebook kernel or Git integration. Realtime invalidates comments/revisions; REST/RLS reads remain authoritative, with 30-second backup reconciliation.
+- The user authorized cloud collaboration on kdgigrfuksaedyureaxe and migration execution through a connected Supabase management tool. Do not execute against another project or assume an unconnected integration is available. Publishable configuration comes from environment/repository variables only.
+- Supabase Auth stores user identities in auth.users. Projects/comments reference those IDs; invited emails are the collaboration allowlist.
+- Versioned migrations are in supabase/migrations. Apply baseline only to a new database; upgrade existing data with the additive Realtime migration. Never reset a live database.
 
 ## Integrity and security
 - Do not execute notebook code or render notebook HTML/SVG as active markup; no remote media.
@@ -30,6 +33,7 @@ Help an analyst and a non-Git collaborator review a notebook together without mo
 
 ## Quality and testing
 - `npm test`: domain/configuration and actual PostgreSQL RLS tests using PGlite.
+- `npm run test:live`: explicit live two-user test, requires configured services and dedicated test accounts or a locally supplied admin key. Never expose admin credentials in browser configuration or CI logs. It uses synthetic data and cleans up only its own records. It validates password-grant authentication; real email OTP delivery needs separate verification.
 - `npm run test:browser`: Playwright tasks, injection checks, desktop/mobile layout. Auth/REST browser fixtures are mocked; clearly distinguish these from live Supabase tests.
 - Check owner/reviewer/stranger/anonymous permissions, invitation revocation, spoofed authors, changed anchors, immutable baseline, duplicate legacy cells, output changes and stale versions.
 - Keep errors visible and preserve active data on malformed imports. Support keyboard and narrow layouts. Keep invitation URLs and assets relative to the application base path. Token refresh must be deduplicated; logout must invalidate late project loads.

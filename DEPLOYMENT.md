@@ -12,30 +12,30 @@ Without repository variables, `config.json` contains `{"configured":false}`. Do 
 
 ## Enable online collaboration
 
-1. Create a dedicated Supabase project and execute `database/schema.sql` in its SQL Editor.
-2. For a database already using the previous schema, apply only `database/migrate-v2.sql`. This additive migration preserves comments and adds revision acknowledgement. Do not recreate tables.
+1. Create a dedicated Supabase project and apply `supabase/migrations/20261009000100_review_baseline.sql`, then `supabase/migrations/20261009000200_review_realtime.sql`. The baseline requires a new database.
+2. For a database already using the previous schema, apply only `supabase/migrations/20261009000200_review_realtime.sql`. This additive migration preserves comments and adds revision acknowledgement, protects acknowledgement with a project-row lock, and registers only the project/comment tables with the Realtime publication. Existing publication tables are preserved. Do not recreate tables.
 3. Obtain the Project URL and publishable key (or legacy public anon JWT). The frontend needs no service_role key, database password or SMTP password.
 4. In GitHub Settings → Secrets and variables → Actions → Variables, add:
 
 ```text
-SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_URL=https://kdgigrfuksaedyureaxe.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
 The legacy public key can use `SUPABASE_ANON_KEY` instead. These are public browser settings. The build rejects incomplete settings and secret keys. No variables are needed for local-demo mode.
 
 5. Include `{{ .Token }}` in the Supabase Auth Magic Link email template for email-code login. Configure your own SMTP; the built-in test mail service restricts recipients and frequency. Set Auth Site URL to the deployed URL. If enabling CAPTCHA, implement the corresponding frontend interaction first.
-6. Run the Pages workflow manually. The build generates public configuration and a CSP meta tag allowing the configured HTTPS connection. Pages cannot set application-specific HTTP response headers; meta cannot set header-only directives such as frame-ancestors.
+6. Run the Pages workflow manually. The build generates public configuration and a CSP meta tag allowing the configured HTTPS and WSS connections. Pages cannot set application-specific HTTP response headers; meta cannot set header-only directives such as frame-ancestors.
 
 [Email OTP documentation](https://supabase.com/docs/guides/auth/auth-email-passwordless) · [SMTP documentation](https://supabase.com/docs/guides/auth/auth-smtp)
 
 ## Required live acceptance tests — not yet completed
 
 - Owner receives a real email code, signs in, imports synthetic data, shares it and invites a second email.
-- Reviewer signs in with that address and posts a comment; owner receives it.
-- Owner uploads a revision; reviewer refreshes, checks changes and confirms the revision reviewed. Another changed revision requires another check.
+- Reviewer signs in with that address and posts a comment; owner receives it through Realtime without manual refresh. Both screens show Live updates.
+- Owner uploads a revision; reviewer receives it automatically, checks changes and confirms the revision reviewed. Another changed revision requires another check.
 - An uninvited third email cannot access the review. Revoking an invitation rejects subsequent reads and writes.
-- No Supabase project has been configured. Mock Auth/REST tests cannot substitute for these checks.
+- A project reference and URL have been provided, but database execution, Publishable Key configuration and live acceptance are still pending. Mock Auth/REST/WebSocket tests cannot substitute for these checks.
 
 ## Vercel alternative and local development
 
@@ -44,3 +44,13 @@ For Vercel, select Other framework, build command `node build.mjs`, output `dist
 Locally run `npm ci` and `npm start`. To configure a local backend, use `node --env-file=.env dev-server.mjs`; `.env` is ignored by Git. The preview listens on 127.0.0.1 only.
 
 Run `npm run build`, then `node scripts/smoke.mjs https://georgefifth.github.io/notebook-review/` for public frontend verification. The smoke script uses the synthetic example even when Supabase is configured; it does not authenticate or exercise the backend. Use the live acceptance checklist above to verify online collaboration.
+
+## Explicit live two-user test
+
+`npm run test:live` opens two isolated browser contexts against the real public site. It verifies real Auth sessions, invitation-only REST access, comments and revisions without refresh, draft preservation, acknowledgements and revoked-access denial. It removes its own synthetic test project afterwards.
+
+Provide the public configuration above, plus `REVIEW_OWNER_EMAIL`, `REVIEW_OWNER_PASSWORD`, `REVIEW_REVIEWER_EMAIL`, and `REVIEW_REVIEWER_PASSWORD` for two dedicated, confirmed test accounts. Alternatively, a locally supplied `SUPABASE_TEST_ADMIN_KEY` creates two temporary confirmed test accounts and deletes them afterwards. Admin credentials must never enter frontend config, Git, shared output or Pages variables. Do not disable email confirmation for production users to run this test.
+
+The script uses real password grants to initialize test sessions. It does **not** prove email OTP delivery. Separately verify Send code → inbox receipt → Verify and sign in with two real inboxes. Configure SMTP and the `{{ .Token }}` email template first. A publishable key alone cannot apply database migrations or administer test users.
+
+Realtime subscriptions include INSERT/UPDATE only and select small identifier/version payloads. Events trigger authorized REST reads; the application does not use event rows as permission evidence. Backup reconciliation detects deleted projects and revoked access within 30 seconds while the tab is visible. Database reads/writes are denied immediately on revocation; already downloaded data cannot be recalled.
