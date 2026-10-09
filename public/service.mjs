@@ -6,24 +6,24 @@ export class ReviewAPI {
     if (authenticated && this.session) headers.Authorization = 'Bearer ' + this.session.access_token;
     const response = await fetch(this.config.url + '/auth/v1/' + path, { method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(20000) });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.msg || data.error_description || data.message || '邮箱登录服务暂时不可用。');
+    if (!response.ok) throw new Error(data.msg || data.error_description || data.message || 'Email sign-in is temporarily unavailable.');
     return data;
   }
   async sendOTP(email) { await this.auth('otp', { email, create_user: true }); }
-  async verifyOTP(email, token) { const session = await this.auth('verify', { email, token, type: 'email' }); if (!session.access_token || !session.user?.id) throw new Error('登录响应不完整。'); this.saveSession({ ...session, expires_at: session.expires_at || Date.now() / 1000 + session.expires_in }); }
+  async verifyOTP(email, token) { const session = await this.auth('verify', { email, token, type: 'email' }); if (!session.access_token || !session.user?.id) throw new Error('The sign-in response is incomplete.'); this.saveSession({ ...session, expires_at: session.expires_at || Date.now() / 1000 + session.expires_in }); }
   async token() {
-    if (!this.session) throw new Error('请先用邮箱登录。');
+    if (!this.session) throw new Error('Please sign in with email first.');
     if (this.session.expires_at < Date.now() / 1000 + 60) {
       if (!this.refreshing) {
         const session = this.session;
         this.refreshing = (async () => {
-          try { const value = await this.auth('token?grant_type=refresh_token', { refresh_token: session.refresh_token }); if (this.session !== session) throw new Error('登录状态已变化，请重试。'); if (!value.access_token || !value.user?.id) throw new Error('刷新登录响应不完整。'); this.saveSession({ ...value, expires_at: value.expires_at || Date.now() / 1000 + value.expires_in }); }
-          catch (error) { if (this.session === session) this.saveSession(null); throw new Error('登录已过期，请重新登录。'); }
+          try { const value = await this.auth('token?grant_type=refresh_token', { refresh_token: session.refresh_token }); if (this.session !== session) throw new Error('Your sign-in state changed. Please try again.'); if (!value.access_token || !value.user?.id) throw new Error('The session refresh response is incomplete.'); this.saveSession({ ...value, expires_at: value.expires_at || Date.now() / 1000 + value.expires_in }); }
+          catch (error) { if (this.session === session) this.saveSession(null); throw new Error('Your session expired. Please sign in again.'); }
         })().finally(() => { this.refreshing = null; });
       }
       await this.refreshing;
     }
-    if (!this.session) throw new Error('请先用邮箱登录。');
+    if (!this.session) throw new Error('Please sign in with email first.');
     return this.session.access_token;
   }
   async request(table, query = '', method = 'GET', body) {
@@ -31,11 +31,11 @@ export class ReviewAPI {
     const response = await fetch(this.config.url + '/rest/v1/' + table + (query ? '?' + query : ''), { method, headers: { apikey: this.config.publicKey, Authorization: 'Bearer ' + token, 'Content-Type': 'application/json', Prefer: 'return=representation' }, ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: AbortSignal.timeout(20000) });
     const data = response.status === 204 ? [] : await response.json();
     if (!response.ok) {
-      if (response.status === 401) { this.saveSession(null); throw new Error('登录已过期，请重新登录。'); }
-      if (response.status === 403) throw new Error('没有此操作的权限，请确认受邀邮箱或联系审阅发起者。');
-      if (response.status === 409) throw new Error('记录已存在或发生冲突，请刷新后重试。');
-      if (data.code === '42P01') throw new Error('在线工作区尚未完成数据库配置，请联系部署者。');
-      throw new Error('操作未保存，请刷新审阅后重试。');
+      if (response.status === 401) { this.saveSession(null); throw new Error('Your session expired. Please sign in again.'); }
+      if (response.status === 403) throw new Error('Permission denied. Check your invited email or contact the review owner.');
+      if (response.status === 409) throw new Error('The record already exists or conflicts with an update. Refresh and try again.');
+      if (data.code === '42P01') throw new Error('The online database is not configured. Contact the deployer.');
+      throw new Error('Your change was not saved. Refresh the review and try again.');
     }
     return data;
   }

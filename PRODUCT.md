@@ -4,21 +4,21 @@
 An analyst works in Jupyter. A domain specialist reviews narrative, code and existing results without Python or Git. Both need comments attached to the exact reviewed content and an explicit way to see whether a later version affects them.
 
 ## Confirmed decisions
-The user chose online collaboration and permitted choosing a host. Use email one-time-password sign-in, Vercel hosting, and Supabase Auth/PostgreSQL. Reviewers need only their email account; the deployer needs hosting and database accounts. Project invitations are email allowlists; the application does not automatically email invitations.
+The user chose online collaboration and permitted choosing a host. Use email one-time-password sign-in, GitHub Pages hosting, and an optional Supabase Auth/PostgreSQL backend. Reviewers need only their email account; the deployer needs hosting and database accounts. Project invitations are email allowlists; the application does not automatically email invitations.
 
 ## Core workflow
 1. Import the base `.ipynb`. Preview locally before any upload.
-2. Sign in with an email verification code. Choose "共享为在线审阅" to upload the exact base snapshot and create a project.
+2. Sign in with an email verification code. Choose "Share online" to upload the exact base snapshot and create a project.
 3. Add collaborator email addresses and copy the project link. The owner shares it through an existing channel.
 4. Reviewer signs in with their invited email, reads the snapshot and posts cell comments. Comments synchronize every 8 seconds, or on refresh.
-5. Owner uploads a revised notebook. Compare source and output changes, positions, removals and added cells. Reviewers use "刷新审阅" to fetch the revision.
+5. Owner uploads a revised notebook. Compare source and output changes, positions, removals and added cells. Reviewers use "Refresh review" to fetch the revision.
 6. Owner or original commenter closes/reopens feedback after checking it. Previously closed comments on changed/unlinked content still show a recheck warning.
 7. Export JSON feedback as an independent record. The export is not a backup of all membership/auth/project revision data.
 
 ## MVP boundaries
 One immutable base plus one replaceable comparison version per project. Comments belong to base cells. New content is reviewed by starting another project. No simultaneous notebook editing, kernel execution, automatic fixes, AI review, Git integration, comment replies or clinical claims.
 
-Notebook v4, max 5 MB / 10,000 cells. Accept string/list source. Preview markdown headings/paragraphs as escaped text; code/raw source, saved text/error outputs and PNG/JPEG. Full Markdown/LaTeX fidelity, attachments, HTML tables, SVG and widgets are outside this MVP and must show an appropriate fallback.
+Notebook v4, max 5 MB / 10,000 cells. Accept string/list source. Preview common safe Markdown and simple tables; code/raw source, saved text/error outputs and PNG/JPEG. Full Markdown/LaTeX fidelity, attachments, HTML tables, SVG and widgets are outside this MVP and must show an appropriate fallback.
 
 ## Acceptance criteria
 - Local imports do not upload until explicit sharing.
@@ -33,7 +33,7 @@ Notebook v4, max 5 MB / 10,000 cells. Accept string/list source. Preview markdow
 - Drafts survive background synchronization; switching cells with a draft asks the user to send/clear it first.
 
 ## Architecture
-A static dependency-free browser application calls Supabase Auth/REST directly with a public key and user JWT. RLS and SQL triggers enforce access and anchoring. Notebook records are private JSONB rows; no public storage bucket. Vercel serves static assets and a public-only configuration function. CSP restricts scripts and media; the default deployment supports hosted `*.supabase.co` URLs.
+A static dependency-free browser application calls Supabase Auth/REST directly with a public key and user JWT. RLS and SQL triggers enforce access and anchoring. Notebook records are private JSONB rows; no public storage bucket. GitHub Pages serves static assets and a generated public-only config.json; Vercel is an alternative host. CSP restricts scripts and media; the default deployment supports hosted `*.supabase.co` URLs.
 
 ## Validation
 Run domain and PostgreSQL RLS tests. Browser task tests use mocked Auth/REST and do not establish live email/database functionality. A live smoke test is required after applying schema and configuring Supabase + SMTP.

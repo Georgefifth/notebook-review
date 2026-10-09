@@ -30,7 +30,7 @@ export function renderMarkdown(container, source) {
     if (isFence(lines[i])) { i++;const code=[];while(i<lines.length&&!isFence(lines[i]))code.push(lines[i++]);if(i<lines.length)i++;const pre=node('pre');pre.className='code';pre.append(node('code',code.join('\n')));container.append(pre);continue; }
     const heading=lines[i].match(/^(#{1,6})\s+(.+)$/);
     if(heading){const h=node('h'+Math.min(6,heading[1].length+1));inline(h,heading[2]);container.append(h);i++;continue;}
-    if(isTable(i)) { const wrap=node('div'),table=node('table'),head=node('thead'),tr=node('tr');wrap.className='table-wrap';table.setAttribute('aria-label','Notebook Markdown 表格');for(const col of columns(lines[i])){const th=node('th');th.scope='col';inline(th,col);tr.append(th);}head.append(tr);table.append(head);i+=2;const body=node('tbody');while(i<lines.length&&lines[i].trim()&&lines[i].includes('|')){const row=node('tr');for(const col of columns(lines[i++])){const td=node('td');inline(td,col);row.append(td);}body.append(row);}table.append(body);wrap.append(table);container.append(wrap);continue; }
+    if(isTable(i)) { const wrap=node('div'),table=node('table'),head=node('thead'),tr=node('tr');wrap.className='table-wrap';table.setAttribute('aria-label','Notebook Markdown table');for(const col of columns(lines[i])){const th=node('th');th.scope='col';inline(th,col);tr.append(th);}head.append(tr);table.append(head);i+=2;const body=node('tbody');while(i<lines.length&&lines[i].trim()&&lines[i].includes('|')){const row=node('tr');for(const col of columns(lines[i++])){const td=node('td');inline(td,col);row.append(td);}body.append(row);}table.append(body);wrap.append(table);container.append(wrap);continue; }
     if(isList(lines[i])) {const ordered=/^\s*\d+\. /.test(lines[i]);const list=node(ordered?'ol':'ul');while(i<lines.length&&isList(lines[i])&&/^\s*\d+\. /.test(lines[i])===ordered){const li=node('li');inline(li,lines[i++].replace(/^\s*(?:[-*+] |\d+\. )/,''));list.append(li);}container.append(list);continue;}
     if(/^> ?/.test(lines[i])) {const quote=node('blockquote');const chunk=[];while(i<lines.length&&/^> ?/.test(lines[i]))chunk.push(lines[i++].replace(/^> ?/,''));inline(quote,chunk.join('\n'));container.append(quote);continue;}
     const paragraph=[];
@@ -49,6 +49,6 @@ export function lineDiff(before, after, maxWork = 200000) {
   out.push(...a.slice(a.length-suffix).map(text=>({kind:'same',text})));return out;
 }
 export function renderDiff(container, before, after) {
-  const details=node('details'),summary=node('summary','查看逐行内容差异（− 原快照 / ＋ 新版）');details.append(summary);const pre=node('pre');pre.className='line-diff';
+  const details=node('details'),summary=node('summary','View line changes (− original / ＋ revision)');details.append(summary);const pre=node('pre');pre.className='line-diff';
   for(const line of lineDiff(before,after)){const span=node('span',(line.kind==='remove'?'− ':line.kind==='add'?'＋ ':'  ')+line.text+'\n');span.className='diff-'+line.kind;pre.append(span);}details.append(pre);container.append(details);
 }

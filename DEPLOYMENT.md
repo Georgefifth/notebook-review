@@ -1,47 +1,46 @@
-# GitHub Pages 前端 + 可选 Supabase 后端
+# GitHub Pages frontend with optional Supabase backend
 
-当前仓库：https://github.com/Georgefifth/notebook-review
-公开演示：https://georgefifth.github.io/notebook-review/
+[Repository](https://github.com/Georgefifth/notebook-review) · [Public demo](https://georgefifth.github.io/notebook-review/)
 
-GitHub Pages只托管静态HTML/CSS/JS，不运行api/config.js、Notebook内核或数据库。[官方说明](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)。未配置Supabase时，只能使用本浏览器的导入、评论、对照和导出；界面明确显示本地演示。静态前端配置好外部Supabase后，可以直接调用其Auth与REST，但服务本身不在Pages中。
+GitHub Pages hosts static HTML/CSS/JavaScript. It cannot run `api/config.js`, Notebook kernels or a database. [Pages documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages). Without Supabase, import, comments, comparisons and exports stay in this browser; the interface labels this local-demo mode. A configured frontend calls external Supabase Auth and REST services directly.
 
-## 默认Pages部署
+## Default Pages deployment
 
-Pages设置选择GitHub Actions。`.github/workflows/pages.yml`先在Node22执行核心/数据库/浏览器测试，再构建dist并部署。main推送会重新部署。构建使用相对资源路径，支持仓库子路径；仅dist发布，数据库SQL和测试不会作为网站文件上传。
+Select GitHub Actions in the repository Pages settings. `.github/workflows/pages.yml` runs core, database and browser tests with Node 22, builds `dist`, deploys it, and tests the actual public URL. Source changes on main trigger deployment; documentation-only changes do not. Relative asset paths support repository subpaths. Only `dist` is published; SQL and tests are excluded.
 
-无仓库变量时，config.json包含`{"configured":false}`。不要把环境文件或密钥加入代码。源码中只有合成Notebook与测试账户。
+Without repository variables, `config.json` contains `{"configured":false}`. Do not commit environment files or secrets. Examples and test identities are synthetic.
 
-## 启用真实在线协作
+## Enable online collaboration
 
-1. 创建专用Supabase项目，在SQL Editor执行database/schema.sql。
-2. 如果已装过旧版schema，仅执行database/migrate-v2.sql；不要重建表。该增量迁移保留评论，并增加本次修订复核字段。本轮用户尚未创建数据库，因此无需迁移现有服务。
-3. 获取项目URL和publishable key或旧公开anon JWT。**不需要service_role、数据库密码或SMTP密码交给前端。**
-4. 在GitHub仓库 Settings → Secrets and variables → Actions → Variables 添加：
+1. Create a dedicated Supabase project and execute `database/schema.sql` in its SQL Editor.
+2. For a database already using the previous schema, apply only `database/migrate-v2.sql`. This additive migration preserves comments and adds revision acknowledgement. Do not recreate tables.
+3. Obtain the Project URL and publishable key (or legacy public anon JWT). The frontend needs no service_role key, database password or SMTP password.
+4. In GitHub Settings → Secrets and variables → Actions → Variables, add:
 
-```
-SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+```text
+SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-旧公开key可用SUPABASE_ANON_KEY代替。它们是公开浏览器配置，构建只允许公开key，提供不完整/secret配置时失败，防止假装连接成功。未启用后端时不需添加变量。
+The legacy public key can use `SUPABASE_ANON_KEY` instead. These are public browser settings. The build rejects incomplete settings and secret keys. No variables are needed for local-demo mode.
 
-5. 在Supabase Auth Email Templates的Magic Link模板加入`{{ .Token }}`；应用使用邮箱验证码登录。配置自有SMTP：内置测试邮件服务有收件人和频率限制。Auth Site URL设为部署URL。若启用CAPTCHA，需要先补充前端对应交互。
-6. 手动触发Pages workflow；构建会生成仅含公开配置的config.json和只允许相应HTTPS连接的CSP meta。Pages不支持应用自定义HTTP响应头；meta无法设置frame-ancestors等仅header支持的指令。
+5. Include `{{ .Token }}` in the Supabase Auth Magic Link email template for email-code login. Configure your own SMTP; the built-in test mail service restricts recipients and frequency. Set Auth Site URL to the deployed URL. If enabling CAPTCHA, implement the corresponding frontend interaction first.
+6. Run the Pages workflow manually. The build generates public configuration and a CSP meta tag allowing the configured HTTPS connection. Pages cannot set application-specific HTTP response headers; meta cannot set header-only directives such as frame-ancestors.
 
-[Supabase OTP文档](https://supabase.com/docs/guides/auth/auth-email-passwordless) · [SMTP文档](https://supabase.com/docs/guides/auth/auth-smtp)
+[Email OTP documentation](https://supabase.com/docs/guides/auth/auth-email-passwordless) · [SMTP documentation](https://supabase.com/docs/guides/auth/auth-smtp)
 
-## 必须执行的真实在线验收（当前未通过）
+## Required live acceptance tests — not yet completed
 
-- Owner实际收取验证码并登录，导入合成示例、共享、邀请第二邮箱。
-- Reviewer用受邀邮箱登录并评论；Owner收到反馈。
-- Owner提交新版，Reviewer刷新后核对；确认新版已复核后反馈退出待处理；再次变化重新提示。
-- 非受邀第三邮箱无法访问；撤销邀请后新的读写立即被拒。
-- 本次没有Supabase项目，自动化Auth/REST是模拟接口，不能替代以上测试。
+- Owner receives a real email code, signs in, imports synthetic data, shares it and invites a second email.
+- Reviewer signs in with that address and posts a comment; owner receives it.
+- Owner uploads a revision; reviewer refreshes, checks changes and confirms the revision reviewed. Another changed revision requires another check.
+- An uninvited third email cannot access the review. Revoking an invitation rejects subsequent reads and writes.
+- No Supabase project has been configured. Mock Auth/REST tests cannot substitute for these checks.
 
-## 可选Vercel与本机
+## Vercel alternative and local development
 
-Vercel Other框架，build=`node build.mjs`，output=`dist`，设置相同公开变量。api/config.js仍可用，但客户端读取静态config.json；修改变量需要重新构建。使用自托管Supabase域名时同时更新vercel.json的connect-src。Vercel可能设置部署访问保护，分享前核对。
+For Vercel, select Other framework, build command `node build.mjs`, output `dist`, and the same public variables. `api/config.js` remains available, but the frontend reads static `config.json`; changes require rebuilding. For self-hosted Supabase, also update `vercel.json` connect-src. Check deployment access protection before sharing.
 
-本机：`npm ci && npm start`。配置服务可用`node --env-file=.env dev-server.mjs`；.env被Git排除。预览服务仅监听127.0.0.1。
+Locally run `npm ci` and `npm start`. To configure a local backend, use `node --env-file=.env dev-server.mjs`; `.env` is ignored by Git. The preview listens on 127.0.0.1 only.
 
-构建产物/线上验收：`npm run build`；`node scripts/smoke.mjs https://georgefifth.github.io/notebook-review/`。此脚本始终验证公开前端的合成示例流程；即使配置了Supabase，它也不会登录或测试后端。真实在线能力必须使用上面的验收流程。
+Run `npm run build`, then `node scripts/smoke.mjs https://georgefifth.github.io/notebook-review/` for public frontend verification. The smoke script uses the synthetic example even when Supabase is configured; it does not authenticate or exercise the backend. Use the live acceptance checklist above to verify online collaboration.

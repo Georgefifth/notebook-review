@@ -16,7 +16,7 @@ Open http://127.0.0.1:4173. Without Supabase configuration, the site explicitly 
 
 See [DEPLOYMENT.md](DEPLOYMENT.md). You need a Supabase project, this schema applied to that NEW project, a working Auth email OTP template and SMTP, plus the public Supabase URL/key. Use GitHub Pages or Vercel for the frontend. Ordinary reviewers need only their invited email.
 
-Local notebook imports stay local until choosing "共享为在线审阅". Comments on a demo remain local and are not silently uploaded as another identity. Online comments poll every eight seconds; explicitly refresh to fetch a newly uploaded revision. The user sends invitation links; the app records access permissions but does not send invitation emails.
+Local notebook imports stay local until choosing "Share online". Comments on a demo remain local and are not silently uploaded as another identity. Online comments poll every eight seconds; explicitly refresh to fetch a newly uploaded revision. The user sends invitation links; the app records access permissions but does not send invitation emails.
 
 ## Tests
 
