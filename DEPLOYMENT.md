@@ -44,4 +44,4 @@ Vercel Other框架，build=`node build.mjs`，output=`dist`，设置相同公开
 
 本机：`npm ci && npm start`。配置服务可用`node --env-file=.env dev-server.mjs`；.env被Git排除。预览服务仅监听127.0.0.1。
 
-构建产物/线上验收：`npm run build`；`node scripts/smoke.mjs https://georgefifth.github.io/notebook-review/`。此脚本验证未配置的静态演示；已配置服务使用上面的真实在线验收流程。
+构建产物/线上验收：`npm run build`；`node scripts/smoke.mjs https://georgefifth.github.io/notebook-review/`。此脚本始终验证公开前端的合成示例流程；即使配置了Supabase，它也不会登录或测试后端。真实在线能力必须使用上面的验收流程。
