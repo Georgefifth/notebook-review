@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-09",
+  "publicURL": "https://georgefifth.github.io/notebook-review/",
+  "repo": "https://github.com/Georgefifth/notebook-review",
+  "mode": "local demo; Supabase and SMTP unconfigured",
+  "browserSmoke": {
+    "task": "open, comment, resolve, compare, acknowledge, line diff, mobile",
+    "elapsedMs": 3436,
+    "pageErrors": [],
+    "httpErrors": []
+  },
+  "cloudVerification": "https://github.com/Georgefifth/notebook-review/actions/runs/37900279912",
+  "notValidated": [
+    "real email OTP delivery",
+    "live Supabase invitations and cross-device comments",
+    "human task time and success rate",
+    "retention or willingness to pay"
+  ]
+}
