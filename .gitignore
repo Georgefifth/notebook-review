@@ -9,3 +9,5 @@ playwright-report/
 
 preview*.png
 evidence/*.png
+
+supabase/.temp/
