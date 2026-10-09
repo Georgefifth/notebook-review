@@ -29,9 +29,15 @@ test('PostgreSQL permissions enforce invitations, immutable anchors and optimist
     await t.test('additive migration preserves comments and may safely be reapplied',async()=>{const before=await db.query('select count(*)::int as n from public.review_comments');await db.exec('alter table public.review_comments drop column reviewed_revision_version');await db.exec(await readFile(new URL('../database/migrate-v2.sql',import.meta.url),'utf8'));await db.exec(await readFile(new URL('../database/migrate-v2.sql',import.meta.url),'utf8'));assert.equal((await db.query('select count(*)::int as n from public.review_comments')).rows[0].n,before.rows[0].n);});
     await t.test('cloud migration retains data, permissions and unrelated publications', async()=>{
       const before=await db.query('select count(*)::int as n from public.review_comments');
+      // Model Supabase explicit default grants, which differ from plain PostgreSQL.
+      await db.exec('grant execute on all functions in schema public to anon, authenticated');
       await db.exec('create table public.unrelated(id integer); create publication supabase_realtime for table public.unrelated;');
       const migration=await readFile(new URL('../supabase/migrations/20261009000200_review_realtime.sql',import.meta.url),'utf8');
       await db.exec(migration); await db.exec(migration);
+      const hardening=await readFile(new URL('../supabase/migrations/20261009085340_review_private_permissions.sql',import.meta.url),'utf8');
+      await db.exec(hardening);await db.exec(hardening);
+      const privileges=(await db.query("select has_function_privilege('anon','review_private.review_can_access(uuid)','EXECUTE') as anon_execute, has_function_privilege('authenticated','review_private.review_comment_guard()','EXECUTE') as guard_execute")).rows[0];
+      assert.equal(privileges.anon_execute,false);assert.equal(privileges.guard_execute,false);
       assert.equal((await db.query('select count(*)::int as n from public.review_comments')).rows[0].n,before.rows[0].n);
       const tables=(await db.query("select tablename from pg_publication_tables where pubname='supabase_realtime' order by tablename")).rows.map(r=>r.tablename);
       assert.deepEqual(tables,['review_comments','review_projects','unrelated']);
