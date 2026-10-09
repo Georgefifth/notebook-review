@@ -28,7 +28,7 @@
     "[JavaScript Error: \"Cookie \u201c__cf_bm\u201d has been rejected for invalid domain.\" {file: \"https://kdgigrfuksaedyureaxe.supabase.co/realtime/v1/websocket?apikey=[redacted]&vsn=2.0.0\" line: 0}]"
   ],
   "timings": {
-    "feedbackVisibleInOtherBrowserMs": 2315
+    "feedbackVisibleInOtherBrowserMs": 1302
   },
   "services": "real Auth password grants, PostgreSQL REST/RLS and Realtime",
   "tested": [

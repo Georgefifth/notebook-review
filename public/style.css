@@ -6,3 +6,5 @@
 /* Long signed-in email addresses must not widen the page. */
 .account{min-width:0;max-width:100%;flex-wrap:wrap}
 #identity{min-width:0;overflow-wrap:anywhere}
+.form-bottom span{min-width:0;overflow-wrap:anywhere}
+.form-bottom button{flex-shrink:0}

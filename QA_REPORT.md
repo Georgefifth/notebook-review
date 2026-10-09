@@ -35,6 +35,7 @@ The checklist below was established before execution. `test/qa/acceptance.spec.m
 | QA-04 / P2 | Successful verification, later session expiry, reopen sign-in with same email: stale Verify step/code persisted | Reset OTP step, code and feedback after successful verification and explicit dialog close; repeated login regression passes |
 | QA-05 / P2 | Reopen invitation dialog while membership request runs: old Remove access controls briefly remained; live removal assertion failed | Clear members before displaying/loading dialog; show loading feedback; fresh controls successfully revoke access in the unchanged live test |
 | QA-06 / P2 | Sign in with a long email at 390 px: account header widened the page | Account controls wrap; email can break within the available width; actual authenticated mobile cloud check asserts no horizontal overflow |
+| QA-07 / P2 | Long signed-in author email pushes Post feedback outside the desktop discussion scroll area; page-width checks still pass | Author can shrink/wrap and button keeps its width; explicit discussion scroll-width assertion and long-email task regression pass |
 
 The initial general acceptance run was 15 Pass / 5 Fail across 20 executions. Two failures were whitespace validation; one was premature sign-in; two were an incorrect keyboard test that tabbed away from the already focused input. The keyboard test now asserts the intended automatic focus, then types and submits using keys. Subsequent cloud tests found QA-01, QA-04 and QA-05. These are actual reproduced defects, not conclusions from code inspection alone.
 
@@ -44,7 +45,7 @@ An additional preventive fix from code review keeps an unavailable-review error 
 
 ## Visual and UX review
 
-Inspected actual Firefox screenshots of welcome, desktop revision/diff, 320 px discussion/revision, validation, service failure and session recovery. Main task hierarchy, original/revised labels, saved-output labels and error feedback are readable. No overlap or page horizontal overflow was observed in these fixtures. Screenshots do not prove arbitrary Notebook layouts or WCAG conformance.
+Inspected actual Firefox screenshots of welcome, desktop revision/diff, 320 px discussion/revision, validation, service failure and session recovery. Main task hierarchy, original/revised labels, saved-output labels and error feedback are readable. After fixes, no overlap or page horizontal overflow was observed in the final inspected fixtures. The discussion scroll area is also checked explicitly for horizontal overflow. Screenshots do not prove arbitrary Notebook layouts or WCAG conformance.
 
 The first-use example explains the purpose without requiring developer documentation. Feedback takes three task actions after opening a Notebook: Discuss, enter text, Post. Revision comparison takes Compare revision, choose file, then Confirm for previously resolved feedback. These counts describe this scripted workflow, not measured human efficiency or competitor advantage. The fixes restore task success and remove erroneous recovery steps; they do not add features or reduce normal posting steps.
 
