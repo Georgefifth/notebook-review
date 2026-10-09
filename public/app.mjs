@@ -7,6 +7,7 @@ const discussionNode = $('discussion');
 const narrowLayout = matchMedia('(max-width: 1100px)');
 function mountDiscussion() { const index = state.base?.cells.findIndex(c => c.key === state.selected); const card = index >= 0 ? $('cell-' + index) : null; if (narrowLayout.matches && card) card.after(discussionNode); else $('workspace-main').after(discussionNode); }
 narrowLayout.addEventListener('change', mountDiscussion);
+let recoveryDraft = null, authenticatedUserId = null;
 const state = { project: null, base: null, revision: null, comments: [], selected: null, filter: 'all', demo: false, api: null, busy: false };
 let realtime = null, realtimeKey = '', syncTimer = null, syncPromise = null, syncAgain = false;
 let config = null, lastPollError = '', otpEmail = null, loadSequence = 0, comparisonCache = null, commentsCache = null;
@@ -24,13 +25,16 @@ function commentGroups() {
 const el = (tag, text, cls) => { const node = document.createElement(tag); if (text !== undefined) node.textContent = text; if (cls) node.className = cls; return node; };
 function notice(message, error = false) { $('notice').textContent = message; $('notice').className = 'notice' + (error ? ' error' : ''); $('notice').hidden = !message; }
 async function action(fn) { try { await fn(); } catch (error) { notice(['TimeoutError', 'AbortError'].includes(error.name) ? 'The request timed out. Please try again.' : error.message || 'The action could not be completed.', true); } }
-function canLeave() { if (state.busy) { notice('Saving. Please wait before switching reviews.'); return false; } if (!$('comment-body').value.trim()) return true; return confirm('This feedback has not been sent. Discard the draft and continue?'); }
+function canLeave() { if (state.busy) { notice('Saving. Please wait before switching reviews.'); return false; } if (!$('comment-body').value.trim()) return true; const discard = confirm('This feedback has not been sent. Discard the draft and continue?'); if (discard) recoveryDraft = null; return discard; }
 function resetSelection() { state.selected = null; $('comment-body').value = ''; }
 function actor() { return state.demo ? 'Example reviewer' : state.api?.session?.user?.email || 'Local reviewer'; }
 function owner() { return state.demo || !state.project?.id || state.api?.session?.user?.id === state.project.owner_id; }
 function authUI() {
   const session = state.api?.session;
+  if (!session && state.project?.id && $('comment-body').value.trim()) recoveryDraft = { projectId: state.project.id, userId: authenticatedUserId, key: state.selected, body: $('comment-body').value };
+  if (session) { if (recoveryDraft && recoveryDraft.userId !== session.user.id) { recoveryDraft = null; $('comment-body').value = ''; } authenticatedUserId = session.user.id; }
   if (!session) loadSequence++;
+  $('login-open').disabled = false;
   $('identity').textContent = session?.user?.email || ''; $('identity').hidden = !session;
   $('refresh-projects').hidden = !session; $('logout').hidden = !session; $('login-open').hidden = !!session || !config;
   $('mode').textContent = !config ? 'Local demo · No backend connected' : session ? 'Online workspace' : 'Sign in to share';
@@ -39,6 +43,7 @@ function authUI() {
   if (session) realtime?.refreshAuth();
 }
 function openLogin() { if (!config) { notice('Online services are not configured. Try the example or review locally; sharing requires backend setup.', true); return; } $('login-dialog').showModal(); $('email').focus(); }
+function resetOTP() { otpEmail = null; $('otp-step').hidden = true; $('otp-resend').hidden = true; $('otp').required = false; $('otp').value = ''; $('auth-message').textContent = ''; $('auth-submit').textContent = 'Send code'; }
 async function readNotebook(file) { if (!file || file.size > MAX_BYTES) throw new Error('Choose an .ipynb file up to 5 MB.'); let notebook; try { notebook = JSON.parse(await file.text()); } catch { throw new Error('The file is not a valid JSON Notebook.'); } await snapshot(notebook); return notebook; }
 function localStoreKey() { return 'nr-comments:' + state.base.id; }
 function saveLocal() { try { localStorage.setItem(localStoreKey(), JSON.stringify(state.comments)); return true; } catch { notice('This browser could not save feedback locally. Use Export feedback to save a copy.', true); return false; } }
@@ -46,6 +51,7 @@ async function openLocal(notebook, title, demo = false) {
   const sequence = ++loadSequence; const base = await snapshot(notebook); if (sequence !== loadSequence) return;
   let comments = [];
   try { const saved = JSON.parse(localStorage.getItem('nr-comments:' + base.id) || '[]'); comments = validateComments(saved, base); } catch { notice('Stored feedback is unavailable. Starting a fresh review.', true); }
+  recoveryDraft = null;
   state.project = { title, base_notebook: notebook, snapshot_id: base.id }; state.base = base; state.revision = null; state.comments = comments; state.demo = demo; state.filter = 'all'; $('cell-search').value = ''; resetSelection(); render();
   notice((demo ? 'This is a synthetic example. Comments are saved only in this browser. ' : 'Opened locally. The file has not been uploaded. ') + (config ? 'Choose Share online to create an online review.' : 'Export feedback to save a record. Cross-device sharing is unavailable.'));
 }
@@ -69,7 +75,9 @@ async function loadProject(id) {
   const comments = await state.api.request('review_comments', query({ project_id: 'eq.' + id, order: 'created_at.asc' }));
   if (sequence !== loadSequence) return;
   state.project = project; state.base = base; state.revision = revision; state.comments = comments; state.demo = false; state.filter = 'all'; $('cell-search').value = ''; resetSelection();
-  history.replaceState(null, '', appURL.pathname + '?project=' + id); render(); await listProjects(); notice('Review synchronized.');
+  const restoredDraft = recoveryDraft?.projectId === id && recoveryDraft.userId === state.api.session.user.id && base.cells.some(cell => cell.key === recoveryDraft.key);
+  if (restoredDraft) { state.selected = recoveryDraft.key; $('comment-body').value = recoveryDraft.body; recoveryDraft = null; }
+  history.replaceState(null, '', appURL.pathname + '?project=' + id); render(); await listProjects(); notice(restoredDraft ? 'Review synchronized. Your unsent draft has been restored.' : 'Review synchronized.');
 }
 async function createOnlineProject() {
   if (!config) { openLogin(); return false; }
@@ -239,7 +247,9 @@ async function syncComments() {
 async function showShare() {
   if (state.busy) return; state.busy = true; $('share').disabled = true;
   try { if (!state.project.id && !(await createOnlineProject())) return;
+    $('members').replaceChildren(); $('share-message').textContent = 'Loading collaborators…';
     $('share-dialog').showModal(); $('share-link').value = appURL.href + '?project=' + state.project.id; await refreshMembers();
+    if ($('share-message').textContent === 'Loading collaborators…') $('share-message').textContent = 'Add an email, then send the review link.';
   } finally { state.busy = false; $('share').disabled = false; }
 }
 async function refreshMembers() {
@@ -259,7 +269,7 @@ $('revision-file').onchange = event => action(async () => {
   } finally { state.busy = false; $('revision-button').disabled = false; event.target.value = ''; }
 });
 $('comment-form').onsubmit = event => { event.preventDefault(); action(async () => {
-  const body = $('comment-body').value.trim(); if (!body || !state.selected || state.busy) return; state.busy = true; $('submit-comment').disabled = true; const project = state.project, selected = state.selected;
+  const body = $('comment-body').value.trim(); if (!body) { notice('Write feedback before posting.', true); $('comment-body').focus(); return; } if (!state.selected || state.busy) return; state.busy = true; $('submit-comment').disabled = true; const project = state.project, selected = state.selected;
   try {
     if (state.project.id) { await state.api.request('review_comments', '', 'POST', { project_id: state.project.id, author_id: state.api.session.user.id, cell_key: state.selected, snapshot_id: state.base.id, body }); if (state.project !== project) return; if (state.selected === selected && $('comment-body').value.trim() === body) $('comment-body').value = ''; await syncComments(); notice('Feedback saved to the shared review.'); }
     else { state.comments = [...state.comments, { id: crypto.randomUUID(), snapshotId: state.base.id, cellKey: state.selected, body, author: actor(), resolved: false, createdAt: new Date().toISOString() }]; $('comment-body').value = ''; const saved = saveLocal(); renderCells(); renderDiscussion(); updateSummary(); if (saved) notice('Feedback saved in this browser.'); }
@@ -272,18 +282,18 @@ $('copy-link').onclick = () => action(async () => { try { await navigator.clipbo
 $('refresh-projects').onclick = () => action(listProjects);
 $('refresh-review').onclick = () => action(syncReview);
 $('login-open').onclick = openLogin;
-$('logout').onclick = () => action(async () => { if (!canLeave()) return; await state.api.logout(); notice('Signed out.'); });
+$('logout').onclick = () => action(async () => { if (!canLeave()) return; recoveryDraft = null; $('comment-body').value = ''; await state.api.logout(); notice('Signed out.'); });
 $('email').oninput = () => { if (otpEmail && $('email').value.trim().toLowerCase() !== otpEmail) { otpEmail = null; $('otp-step').hidden = true; $('otp-resend').hidden = true; $('otp').required = false; $('auth-submit').textContent = 'Send code'; } };
 $('login-form').onsubmit = event => { event.preventDefault(); action(async () => {
   $('auth-submit').disabled = true;
   try {
     const email = $('email').value.trim().toLowerCase();
     if (!otpEmail) { await state.api.sendOTP(email); otpEmail = email; $('otp-step').hidden = false; $('otp-resend').hidden = false; $('otp').required = true; $('auth-submit').textContent = 'Verify and sign in'; $('auth-message').textContent = 'Code requested. Check your inbox and spam folder. If needed, reopen sign-in later.'; $('otp').focus(); }
-    else { await state.api.verifyOTP(otpEmail, $('otp').value.trim()); $('login-dialog').close(); await listProjects(); const id = new URLSearchParams(location.search).get('project'); if (id) await loadProject(id); notice('Signed in.'); }
+    else { await state.api.verifyOTP(otpEmail, $('otp').value.trim()); $('login-dialog').close(); resetOTP(); await listProjects(); const id = new URLSearchParams(location.search).get('project'); if (id) await loadProject(id); notice('Signed in.'); }
   } catch (error) { $('auth-message').textContent = error.message; }
   finally { $('auth-submit').disabled = false; }
 }); };
-for (const button of document.querySelectorAll('[data-close]')) button.onclick = () => { $(button.dataset.close).close(); if (button.dataset.close === 'login-dialog') { otpEmail = null; $('otp-step').hidden = true; $('otp-resend').hidden = true; $('otp').required = false; $('auth-submit').textContent = 'Send code'; } };
+for (const button of document.querySelectorAll('[data-close]')) button.onclick = () => { $(button.dataset.close).close(); if (button.dataset.close === 'login-dialog') resetOTP(); };
 $('export-feedback').onclick = () => {
   const comments = state.comments.map(c => ({ id: c.id, snapshotId: state.base.id, cellKey: c.cell_key || c.cellKey, body: c.body, author: c.author_email || c.author, resolved: c.resolved, reviewedRevisionId: state.project.id ? c.reviewed_revision_version === state.project.version ? state.revision?.id || null : null : c.reviewedRevisionId || null, createdAt: c.created_at || c.createdAt }));
   const blob = new Blob([JSON.stringify({ format: 'notebook-review.feedback.v1', snapshotId: state.base.id, baseNotebook: state.project.base_notebook, name: state.project.title, comments }, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob), link = el('a'); link.href = url; link.download = 'notebook-feedback-' + state.base.id.slice(0, 8) + '.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);

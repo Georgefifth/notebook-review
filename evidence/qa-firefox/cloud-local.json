@@ -1,0 +1,53 @@
+{
+  "site": "http://127.0.0.1:4188/",
+  "project": "https://kdgigrfuksaedyureaxe.supabase.co",
+  "passed": true,
+  "browser": "headless Firefox",
+  "independentUsers": 2,
+  "expectedFailureResponses": [
+    {
+      "status": 503,
+      "path": "/rest/v1/review_comments"
+    },
+    {
+      "status": 401,
+      "path": "/rest/v1/review_projects"
+    }
+  ],
+  "expectedOfflineFailures": [
+    {
+      "path": "/rest/v1/review_comments",
+      "error": "NS_ERROR_OFFLINE"
+    }
+  ],
+  "observedConsoleMessages": [
+    "[JavaScript Error: \"Cookie “__cf_bm” has been rejected for invalid domain.\" {file: \"https://kdgigrfuksaedyureaxe.supabase.co/realtime/v1/websocket?apikey=[redacted]&vsn=2.0.0\" line: 0}]",
+    "[JavaScript Error: \"Cookie “__cf_bm” has been rejected for invalid domain.\" {file: \"https://kdgigrfuksaedyureaxe.supabase.co/realtime/v1/websocket?apikey=[redacted]&vsn=2.0.0\" line: 0}]",
+    "[JavaScript Error: \"Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at https://kdgigrfuksaedyureaxe.supabase.co/rest/v1/review_comments. (Reason: CORS request did not succeed). Status code: (null).\"]",
+    "[JavaScript Error: \"Cookie “__cf_bm” has been rejected for invalid domain.\" {file: \"https://kdgigrfuksaedyureaxe.supabase.co/realtime/v1/websocket?apikey=[redacted]&vsn=2.0.0\" line: 0}]",
+    "[JavaScript Error: \"Cookie “__cf_bm” has been rejected for invalid domain.\" {file: \"https://kdgigrfuksaedyureaxe.supabase.co/realtime/v1/websocket?apikey=[redacted]&vsn=2.0.0\" line: 0}]"
+  ],
+  "timings": {
+    "feedbackVisibleInOtherBrowserMs": 794
+  },
+  "services": "real Auth password grants, PostgreSQL REST/RLS and Realtime",
+  "tested": [
+    "uninvited and anonymous denial",
+    "owner sharing",
+    "invited comments without refresh",
+    "revision without refresh",
+    "draft preservation",
+    "acknowledgement",
+    "reviewer cannot edit notebook",
+    "revocation read/write denial",
+    "503 draft preservation and real retry",
+    "injected network abort and real retry",
+    "injected session expiry and controlled same-account recovery",
+    "copy link or explicit fallback",
+    "required invitation input",
+    "refresh persistence",
+    "project list refresh",
+    "logout"
+  ],
+  "emailOTPDelivery": "not tested; dedicated test accounts use password grants"
+}

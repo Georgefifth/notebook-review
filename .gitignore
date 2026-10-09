@@ -11,3 +11,6 @@ preview*.png
 evidence/*.png
 
 supabase/.temp/
+
+evidence/qa-firefox/*.png
+evidence/qa-firefox/results.json

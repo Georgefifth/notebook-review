@@ -8,7 +8,8 @@
     "test": "node --test test/*.test.mjs",
     "test:browser": "playwright test",
     "test:live": "node scripts/live-e2e.mjs",
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "test:qa": "playwright test --config=playwright.qa.config.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",

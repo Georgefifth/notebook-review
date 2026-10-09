@@ -126,3 +126,12 @@ test('Realtime updates two browser sessions without refresh and preserves draft;
   await reviewer.getByRole('button',{name:'Refresh review',exact:true}).click();await expect(reviewer.locator('#workspace')).toBeHidden();await expect(reviewer.locator('#notice')).toContainText('revoked');expect(await reviewer.locator('#comment-body').inputValue()).toBe('Unsent reviewer draft');
   await context.close();
 });
+
+test('expired session restores the same user draft; switching accounts does not expose it',async({page})=>{
+ const store=fixture();await mockBackend(page,store);await page.goto('/');await login(page,'owner@example.org');await page.locator('.project-item').first().click();await page.locator('#cell-1').getByRole('button',{name:'Discuss',exact:true}).click();await page.getByLabel('Your feedback').fill('Private owner recovery draft');
+ const expire=async()=>{
+  await page.route('https://testing.supabase.co/rest/v1/review_projects?**',r=>r.fulfill({status:401,contentType:'application/json',body:'{}'}));await page.getByRole('button',{name:'Refresh review',exact:true}).click();await expect(page.locator('#notice')).toContainText('expired');await expect(page.locator('#workspace')).toBeHidden();await page.unroute('https://testing.supabase.co/rest/v1/review_projects?**');
+ };
+ await expire();await login(page,'owner@example.org');await expect(page.locator('#discussion-title')).toHaveText('Cell 2');await expect(page.getByLabel('Your feedback')).toHaveValue('Private owner recovery draft');await expect(page.locator('.comment')).toHaveCount(0);
+ await expire();await login(page,'reviewer@example.org');await page.locator('#cell-1').getByRole('button',{name:'Discuss',exact:true}).click();await expect(page.getByLabel('Your feedback')).toHaveValue('');
+});

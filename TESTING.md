@@ -46,3 +46,7 @@ Real password grants established the sessions; this is not evidence of email OTP
 A real INSERT RETURNING failure was fixed: a STABLE helper cannot identify the newly inserted row within the same statement. The SELECT policy now directly admits the current owner before the collaborator lookup. The PostgreSQL regression checks successful owner RETURNING and stranger denial. A second regression models Supabase default function grants and checks that anonymous helper execution and authenticated trigger-function execution are revoked.
 
 The test project, comments and invitations were removed. Account/session cleanup was cancelled at the platform SQL confirmation; two synthetic test users remain. Do not claim full cleanup. All three public business tables have RLS, and the Realtime publication contains only projects/comments. The applied migration history matches the source filenames.
+
+## Firefox acceptance and recovery
+
+See [QA_REPORT.md](QA_REPORT.md) for the scenario checklist, reproduced defects, screenshots, fault-injection boundaries, release results and remaining blockers. `npm run test:qa` drives headless Firefox on public/local targets; Pages CI runs both. `REVIEW_BROWSER=firefox npm run test:browser` runs the existing mocked-service regressions in Firefox. `REVIEW_BROWSER=firefox REVIEW_QA=1 npm run test:live` uses the two dedicated accounts, rejects admin-account creation/deletion, and tests real persistence/Realtime plus explicitly controlled 503, network-abort and session-expiry recovery. Injected verification does not verify email delivery.
