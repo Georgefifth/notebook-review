@@ -289,7 +289,7 @@ $('login-form').onsubmit = event => { event.preventDefault(); action(async () =>
   try {
     const email = $('email').value.trim().toLowerCase();
     if (!otpEmail) { await state.api.sendOTP(email); otpEmail = email; $('otp-step').hidden = false; $('otp-resend').hidden = false; $('otp').required = true; $('auth-submit').textContent = 'Verify and sign in'; $('auth-message').textContent = 'Code requested. Check your inbox and spam folder. If needed, reopen sign-in later.'; $('otp').focus(); }
-    else { await state.api.verifyOTP(otpEmail, $('otp').value.trim()); $('login-dialog').close(); resetOTP(); await listProjects(); const id = new URLSearchParams(location.search).get('project'); if (id) await loadProject(id); notice('Signed in.'); }
+    else { await state.api.verifyOTP(otpEmail, $('otp').value.trim()); $('login-dialog').close(); resetOTP(); await action(async () => { await listProjects(); const id = new URLSearchParams(location.search).get('project'); if (id) await loadProject(id); notice('Signed in.'); }); }
   } catch (error) { $('auth-message').textContent = error.message; }
   finally { $('auth-submit').disabled = false; }
 }); };

@@ -40,6 +40,8 @@ The initial general acceptance run was 15 Pass / 5 Fail across 20 executions. Tw
 
 Other harness corrections preserve business assertions: service-error messages intentionally do not expose raw backend text; the 503 check now expects visible “not saved” feedback plus intact text and successful real retry. The Changes test separately counts original and added cells. No business assertion was deleted or relaxed to mask a product failure.
 
+An additional preventive fix from code review keeps an unavailable-review error visible after a successful sign-in closes its dialog. A Firefox controlled Auth/REST test verifies visible owner-contact guidance and continued local example use; this was not reproduced through a real email inbox.
+
 ## Visual and UX review
 
 Inspected actual Firefox screenshots of welcome, desktop revision/diff, 320 px discussion/revision, validation, service failure and session recovery. Main task hierarchy, original/revised labels, saved-output labels and error feedback are readable. No overlap or page horizontal overflow was observed in these fixtures. Screenshots do not prove arbitrary Notebook layouts or WCAG conformance.
