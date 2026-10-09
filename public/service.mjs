@@ -14,9 +14,16 @@ export class ReviewAPI {
   async token() {
     if (!this.session) throw new Error('请先用邮箱登录。');
     if (this.session.expires_at < Date.now() / 1000 + 60) {
-      try { const value = await this.auth('token?grant_type=refresh_token', { refresh_token: this.session.refresh_token }); this.saveSession({ ...value, expires_at: value.expires_at || Date.now() / 1000 + value.expires_in }); }
-      catch (error) { this.saveSession(null); throw new Error('登录已过期，请重新登录。'); }
+      if (!this.refreshing) {
+        const session = this.session;
+        this.refreshing = (async () => {
+          try { const value = await this.auth('token?grant_type=refresh_token', { refresh_token: session.refresh_token }); if (this.session !== session) throw new Error('登录状态已变化，请重试。'); if (!value.access_token || !value.user?.id) throw new Error('刷新登录响应不完整。'); this.saveSession({ ...value, expires_at: value.expires_at || Date.now() / 1000 + value.expires_in }); }
+          catch (error) { if (this.session === session) this.saveSession(null); throw new Error('登录已过期，请重新登录。'); }
+        })().finally(() => { this.refreshing = null; });
+      }
+      await this.refreshing;
     }
+    if (!this.session) throw new Error('请先用邮箱登录。');
     return this.session.access_token;
   }
   async request(table, query = '', method = 'GET', body) {

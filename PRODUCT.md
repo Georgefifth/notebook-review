@@ -47,3 +47,11 @@ Then compare real tasks from five teams against existing tools. Proposed continu
 - https://supabase.com/docs/guides/database/postgres/row-level-security
 - https://supabase.com/docs/guides/auth/auth-smtp
 - https://vercel.com/docs/functions/runtimes/node-js
+
+## Revision acknowledgement and navigation (2026-10-09)
+
+Changed revisions reopen the need to check closed feedback. The author or review owner may explicitly confirm that the current revision was checked. Online acknowledgements bind to project revision version; local acknowledgements bind to the normalized revision fingerprint. Another changed revision asks for another check. This is not a scientific approval. Existing deployments apply database/migrate-v2.sql without replacing tables.
+
+Search covers source, saved output and comments (including matched revision content). Pending feedback has a direct index and next-item control. The return-to-cell control preserves drafts. Markdown supports common safe formatting and simple tables; inline HTML, scripts, external images, LaTeX and interactive output are not executed/rendered. Source changes have an optional bounded line diff, preserving the full side-by-side preview.
+
+Unconfigured deployments hide unavailable login/share actions and state the local-demo limitation. A synthetic revision is one click; real revisions still require upload.

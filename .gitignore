@@ -6,3 +6,6 @@ dist/
 .vercel/
 test-results/
 playwright-report/
+
+preview*.png
+evidence/*.png

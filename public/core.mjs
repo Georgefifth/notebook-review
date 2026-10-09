@@ -43,7 +43,8 @@ export async function snapshot(nb) {
 }
 export function compare(base, revision) {
   const matched = new Set();
-  const reserved = new Set(base.cells.filter(c => c.id !== null).map(c => revision.cells.findIndex(r => r.id === c.id)).filter(i => i >= 0));
+  const revisionIds = new Map(revision.cells.map((c, i) => [c.id, i]).filter(([id]) => id !== null));
+  const reserved = new Set(base.cells.filter(c => c.id !== null).map(c => revisionIds.get(c.id)).filter(i => i !== undefined));
   const signature = cell => canonical([cell.type, cell.source]);
   const frequency = cells => {
     const result = new Map();
@@ -51,11 +52,14 @@ export function compare(base, revision) {
     return result;
   };
   const bf = frequency(base.cells), rf = frequency(revision.cells);
+  const uniqueSources = new Map();
+  revision.cells.forEach((c, i) => { if (rf.get(signature(c)) === 1) uniqueSources.set(signature(c), i); });
   const rows = base.cells.map((cell, index) => {
-    let next = cell.id === null ? -1 : revision.cells.findIndex(c => c.id === cell.id);
+    let next = cell.id === null ? -1 : (revisionIds.get(cell.id) ?? -1);
     let method = next >= 0 ? 'id' : null;
     if (next < 0 && bf.get(signature(cell)) === 1 && rf.get(signature(cell)) === 1) {
-      next = revision.cells.findIndex((c, i) => !reserved.has(i) && (cell.id === null || c.id === null) && signature(c) === signature(cell));
+      const candidate = uniqueSources.get(signature(cell));
+      next = candidate !== undefined && !reserved.has(candidate) && (cell.id === null || revision.cells[candidate].id === null) ? candidate : -1;
       if (next >= 0) method = 'unique-source';
     }
     if (next >= 0 && matched.has(next)) { next = -1; method = null; }
@@ -75,7 +79,8 @@ export function validateComments(comments, base) {
     if (!c || typeof c.id !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(c.id) || ids.has(c.id)) throw new Error('反馈 ID 无效或重复。');
     if (c.snapshotId !== base.id || !keys.has(c.cellKey)) throw new Error('反馈不属于这份审阅快照或单元格。');
     if (typeof c.body !== 'string' || !c.body.trim() || c.body.length > 10000 || typeof c.author !== 'string' || c.author.length > 100 || typeof c.resolved !== 'boolean' || typeof c.createdAt !== 'string' || !Number.isFinite(Date.parse(c.createdAt))) throw new Error('反馈内容或作者格式无效。');
+    if (c.reviewedRevisionId != null && !/^[a-f0-9]{64}$/.test(c.reviewedRevisionId)) throw new Error('复核版本标识无效。');
     ids.add(c.id);
-    return { id: c.id, snapshotId: c.snapshotId, cellKey: c.cellKey, body: c.body, author: c.author, resolved: c.resolved, createdAt: c.createdAt };
+    return { id: c.id, snapshotId: c.snapshotId, cellKey: c.cellKey, body: c.body, author: c.author, resolved: c.resolved, reviewedRevisionId: c.reviewedRevisionId || null, createdAt: c.createdAt };
   });
 }

@@ -1,31 +1,27 @@
-# Verification record — 2026-10-09
+# 验证记录
 
-## Completed
+日期：2026-10-09。本地Node26.7.0；GitHub工作流目标Node22，云端结果待记录。
 
-- 10 domain/config tests passed: source/output normalization, execution-count exclusion, stable-ID moves, deleted/new IDs, ambiguous legacy cells, reserved-ID safety and public-key filtering.
-- 12 PostgreSQL permission/integrity scenarios passed (13 Node test entries including their parent suite). The actual migration executes in an isolated PGlite PostgreSQL instance, with Supabase-like auth.uid()/auth.jwt() helpers and authenticated/anon roles.
-- 5 Chromium browser tests passed: local comment/export/revision round trip; draft preservation; hostile markup and unsupported HTML output; independent owner/reviewer browser sessions with mocked Auth/REST; 390px layout without horizontal overflow; invalid import preserving the active review.
-- Static Vercel frontend build passed.
-- Desktop/mobile screenshots visually inspected.
+## 已通过的本地验证
 
-Test environment: Node 26.7.0, Playwright Chromium. Deployment targets Node 22 (the application uses supported Node 22 APIs); a cloud build and live smoke test remain required.
+- 10个核心/公开配置用例：快照、稳定ID、保守legacy对应、错误格式、多行输出、公开key限制。
+- 2个差异用例：重复/空行/完全替换可还原前后原文；大型差异有界降级。
+- 15个PostgreSQL场景（PGlite执行实际RLS/触发器，不是模拟SQL）：owner/reviewer/stranger/anonymous权限、撤销邀请、作者校验、不可变基线/评论锚点、乐观更新、当前版本确认与增量迁移保留数据。
+- 9个Chromium流程：原审阅/导出/草稿、恶意markup、模拟双用户在线交接与新版确认、窄屏、无效导入、富Markdown/危险URL/远程图片、搜索和手机返回、一键示例差异、并行token刷新与退出竞态。
+- Auth/REST浏览器接口为模拟服务；并未实际给任何人发送邮件。数据库验证和模拟接口验证不能替代真实Supabase部署验收。
+- `npm run build`通过。构建产物在`/notebook-review/`子路径完成打开→评论→关闭→修订→确认→差异→手机返回，无页面错误或HTTP错误。自动化任务约1264ms，此时延受自动化方式和本机环境影响，不能当真人任务耗时。
+- 桌面/390px截图已生成，视觉检查后记录；截图不在Git发布文件中。
+- 基准9次交替运行：3,000格对应计算40.83→8.70ms；10,000格138.27→28.46ms（中位数）。原始数据`evidence/benchmark.json`；`node scripts/benchmark.mjs`可在完整Git历史下重现与基线比较。不含DOM渲染、网络或人类操作。
 
-## Not established
+## 发布检查
 
-- A live Supabase project has not been created/configured. Actual email delivery, SMTP, Supabase Auth behavior and live database API integration have not been tested.
-- No production deployment or real user research has been performed.
-- Browser tests use explicit Auth/REST fixtures, not a fake claim of live collaboration.
-- PostgreSQL RLS tests verify DB policy logic, not full hosted Supabase configuration.
-- User-facing latency, usability improvements, willingness to pay and next-task reuse are unvalidated.
+- 产品目录公开前扫描密钥模式，无真实研究数据；示例都是合成数据，测试邮箱example.org。
+- 新建独立Git仓库，避免误用父目录仓库。只提交产品源文件、公开研究文档和合成测试数据；环境文件、依赖、产物和截图排除。
+- GitHub Pages真实公开站验收：待完成后更新。
 
-## Reproduce
+## 未验证与限制
 
-```
-npm ci
-npm test
-npx playwright install chromium
-npm run test:browser
-npm run build
-```
-
-See DEPLOYMENT.md for the live smoke test required after configuring Supabase.
+- Supabase/SMTP未创建：真实验证码、受邀跨设备评论、撤销访问仍须DEPLOYMENT.md中的在线测试。
+- 没有真实用户耗时、任务成功率、留存、付费或市场优势数据。
+- Markdown是安全子集；不是完整Notebook保真渲染。10,000格DOM渲染未完成端到端基准。
+- 竞品公开功能浏览器尝试受网络影响，未完成其登录后工作流；不报告竞品性能排名。

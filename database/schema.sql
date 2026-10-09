@@ -27,6 +27,7 @@ create table public.review_comments (
   snapshot_id text not null,
   body text not null check (char_length(trim(body)) between 1 and 10000),
   resolved boolean not null default false,
+  reviewed_revision_version integer,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   version integer not null default 1
@@ -75,6 +76,7 @@ begin
     if new.author_id is distinct from auth.uid() then raise exception 'Invalid author'; end if;
     new.author_email := lower(auth.jwt()->>'email');
     new.resolved := false;
+    new.reviewed_revision_version := null;
     new.created_at := now();
     new.updated_at := now();
     new.version := 1;
@@ -88,6 +90,10 @@ begin
   end if;
   select * into p from public.review_projects where id = new.project_id;
   if p.id is null or new.snapshot_id is distinct from p.snapshot_id then raise exception 'Wrong review snapshot'; end if;
+  if not new.resolved then new.reviewed_revision_version := null; end if;
+  if tg_op = 'UPDATE' and new.reviewed_revision_version is distinct from old.reviewed_revision_version and new.reviewed_revision_version is not null then
+    if p.revision_notebook is null or new.reviewed_revision_version is distinct from p.version then raise exception 'Only the current revision can be acknowledged'; end if;
+  end if;
   select exists(
     select 1 from jsonb_array_elements(p.base_notebook->'cells') with ordinality as c(value, n)
     where case when jsonb_typeof(c.value->'id') = 'string' then 'id:' || (c.value->>'id') else 'legacy:' || (c.n - 1)::text end = new.cell_key
