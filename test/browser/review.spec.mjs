@@ -135,3 +135,9 @@ test('expired session restores the same user draft; switching accounts does not 
  await expire();await login(page,'owner@example.org');await expect(page.locator('#discussion-title')).toHaveText('Cell 2');await expect(page.getByLabel('Your feedback')).toHaveValue('Private owner recovery draft');await expect(page.locator('.comment')).toHaveCount(0);
  await expire();await login(page,'reviewer@example.org');await page.locator('#cell-1').getByRole('button',{name:'Discuss',exact:true}).click();await expect(page.getByLabel('Your feedback')).toHaveValue('');
 });
+
+test('signed-in long email stays usable at narrow widths',async({page})=>{
+ const store=fixture();await mockBackend(page,store);await page.setViewportSize({width:390,height:844});await page.goto('/');await login(page,'notebook-review-long-independent-test-account@example.org');await page.locator('.project-item').first().click();
+ for(const width of [320,390,768,1440]){await page.setViewportSize({width,height:1000});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'signed-in overflow at '+width).toBe(true);await expect(page.getByRole('button',{name:'Sign out',exact:true})).toBeVisible();}
+ await page.setViewportSize({width:390,height:844});await page.locator('#cell-1').getByRole('button',{name:'Discuss',exact:true}).click();await page.getByLabel('Your feedback').fill('Signed-in mobile feedback');await page.getByRole('button',{name:'Post feedback'}).click();await expect(page.locator('.comment')).toContainText('Signed-in mobile feedback');
+});

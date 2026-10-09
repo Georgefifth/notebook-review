@@ -21,14 +21,14 @@
     }
   ],
   "observedConsoleMessages": [
-    "[JavaScript Error: \"Cookie “__cf_bm” has been rejected for invalid domain.\" {file: \"https://kdgigrfuksaedyureaxe.supabase.co/realtime/v1/websocket?apikey=[redacted]&vsn=2.0.0\" line: 0}]",
-    "[JavaScript Error: \"Cookie “__cf_bm” has been rejected for invalid domain.\" {file: \"https://kdgigrfuksaedyureaxe.supabase.co/realtime/v1/websocket?apikey=[redacted]&vsn=2.0.0\" line: 0}]",
+    "[JavaScript Error: \"Cookie \u201c__cf_bm\u201d has been rejected for invalid domain.\" {file: \"https://kdgigrfuksaedyureaxe.supabase.co/realtime/v1/websocket?apikey=[redacted]&vsn=2.0.0\" line: 0}]",
+    "[JavaScript Error: \"Cookie \u201c__cf_bm\u201d has been rejected for invalid domain.\" {file: \"https://kdgigrfuksaedyureaxe.supabase.co/realtime/v1/websocket?apikey=[redacted]&vsn=2.0.0\" line: 0}]",
     "[JavaScript Error: \"Cross-Origin Request Blocked: The Same Origin Policy disallows reading the remote resource at https://kdgigrfuksaedyureaxe.supabase.co/rest/v1/review_comments. (Reason: CORS request did not succeed). Status code: (null).\"]",
-    "[JavaScript Error: \"Cookie “__cf_bm” has been rejected for invalid domain.\" {file: \"https://kdgigrfuksaedyureaxe.supabase.co/realtime/v1/websocket?apikey=[redacted]&vsn=2.0.0\" line: 0}]",
-    "[JavaScript Error: \"Cookie “__cf_bm” has been rejected for invalid domain.\" {file: \"https://kdgigrfuksaedyureaxe.supabase.co/realtime/v1/websocket?apikey=[redacted]&vsn=2.0.0\" line: 0}]"
+    "[JavaScript Error: \"Cookie \u201c__cf_bm\u201d has been rejected for invalid domain.\" {file: \"https://kdgigrfuksaedyureaxe.supabase.co/realtime/v1/websocket?apikey=[redacted]&vsn=2.0.0\" line: 0}]",
+    "[JavaScript Error: \"Cookie \u201c__cf_bm\u201d has been rejected for invalid domain.\" {file: \"https://kdgigrfuksaedyureaxe.supabase.co/realtime/v1/websocket?apikey=[redacted]&vsn=2.0.0\" line: 0}]"
   ],
   "timings": {
-    "feedbackVisibleInOtherBrowserMs": 794
+    "feedbackVisibleInOtherBrowserMs": 2315
   },
   "services": "real Auth password grants, PostgreSQL REST/RLS and Realtime",
   "tested": [

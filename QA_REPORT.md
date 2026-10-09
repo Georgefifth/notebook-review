@@ -34,6 +34,7 @@ The checklist below was established before execution. `test/qa/acceptance.spec.m
 | QA-03 / P2 | Select a cell, enter spaces, post: no result and no corrective message | “Write feedback before posting.” with input focus; no empty record; valid retry saves |
 | QA-04 / P2 | Successful verification, later session expiry, reopen sign-in with same email: stale Verify step/code persisted | Reset OTP step, code and feedback after successful verification and explicit dialog close; repeated login regression passes |
 | QA-05 / P2 | Reopen invitation dialog while membership request runs: old Remove access controls briefly remained; live removal assertion failed | Clear members before displaying/loading dialog; show loading feedback; fresh controls successfully revoke access in the unchanged live test |
+| QA-06 / P2 | Sign in with a long email at 390 px: account header widened the page | Account controls wrap; email can break within the available width; actual authenticated mobile cloud check asserts no horizontal overflow |
 
 The initial general acceptance run was 15 Pass / 5 Fail across 20 executions. Two failures were whitespace validation; one was premature sign-in; two were an incorrect keyboard test that tabbed away from the already focused input. The keyboard test now asserts the intended automatic focus, then types and submits using keys. Subsequent cloud tests found QA-01, QA-04 and QA-05. These are actual reproduced defects, not conclusions from code inspection alone.
 

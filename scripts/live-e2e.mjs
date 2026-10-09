@@ -46,6 +46,7 @@ try {
     assert.equal(deployed.url,config.url);assert.equal(deployed.configured,true);return page;
   }
   const ownerPage=await pageFor(ownerSession),reviewerPage=await pageFor(reviewerSession);
+  if(qaMode){await ownerPage.setViewportSize({width:390,height:844});await screenshot(ownerPage,'signed-in-mobile');assert.equal(await ownerPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'signed-in mobile header overflows');await ownerPage.setViewportSize({width:1440,height:1000});}
   await ownerPage.getByRole('button',{name:'Open example review →'}).click();
   await ownerPage.getByRole('button',{name:'Share online',exact:true}).click();await ownerPage.getByLabel('Review link',{exact:true}).waitFor();
   const link=await ownerPage.getByLabel('Review link',{exact:true}).inputValue();projectId=new URL(link).searchParams.get('project');assert.ok(projectId);
