@@ -59,6 +59,55 @@ async function mockBackend(page, store) {
   });
 }
 async function login(page,email) { await page.getByRole('button',{name:'Sign in with email',exact:true}).click(); await page.getByLabel('Email address').fill(email); await page.getByRole('button',{name:'Send code',exact:true}).click(); await page.getByLabel('Email verification code').fill('123456'); await page.getByRole('button',{name:'Verify and sign in'}).click(); await expect(page.locator('#identity')).toHaveText(email); }
+test('an invited link opens and saves feedback while the sidebar list is delayed', async ({page}) => {
+  const store = fixture(); await mockBackend(page, store);
+  await page.addInitScript(session => sessionStorage.setItem('nr-session', JSON.stringify(session)), {
+    access_token: 'reviewer-token', refresh_token: 'refresh', expires_at: Date.now() / 1000 + 3600,
+    user: {id: reviewerId, email: 'reviewer@example.org'},
+  });
+  let release; const gate = new Promise(resolve => { release = resolve; });
+  await page.route('https://testing.supabase.co/rest/v1/review_projects?**', async route => {
+    if (!new URL(route.request().url()).searchParams.has('id')) await gate;
+    await route.fallback();
+  });
+  try {
+    await page.goto('/?project=' + projectId);
+    await expect(page.locator('#project-title')).toHaveText('Shared sample analysis');
+    await page.locator('#cell-1').getByRole('button', {name: 'Discuss', exact: true}).click();
+    await page.getByLabel('Your feedback').fill('Feedback without waiting for the sidebar');
+    await page.getByRole('button', {name: 'Post feedback'}).click();
+    await expect(page.locator('#comments')).toContainText('Feedback without waiting for the sidebar');
+    expect(store.comments.some(comment => comment.body === 'Feedback without waiting for the sidebar')).toBe(true);
+    await page.screenshot({path: 'evidence/qa-firefox/invitation-delayed-sidebar.png', fullPage: true});
+  } finally { release(); }
+  await expect(page.locator('.project-item')).toContainText('Shared sample analysis');
+});
+test('signing in from an invitation remains usable when the sidebar fails and can retry', async ({page}) => {
+  const store = fixture(); await mockBackend(page, store);
+  let listFailed = false;
+  await page.route('https://testing.supabase.co/rest/v1/review_projects?**', async route => {
+    if (!new URL(route.request().url()).searchParams.has('id') && !listFailed) {
+      listFailed = true;
+      await route.fulfill({status: 503, contentType: 'application/json', body: '{}'});
+    } else await route.fallback();
+  });
+  await page.goto('/?project=' + projectId);
+  await page.getByLabel('Email address').fill('reviewer@example.org');
+  await page.getByRole('button', {name: 'Send code', exact: true}).click();
+  await page.getByLabel('Email verification code').fill('123456');
+  await page.getByRole('button', {name: 'Verify and sign in'}).click();
+  await expect(page.locator('#project-title')).toHaveText('Shared sample analysis');
+  await expect(page.locator('#notice')).toContainText('Refresh project list');
+  await expect(page.locator('#login-dialog')).not.toBeVisible();
+  await page.screenshot({path: 'evidence/qa-firefox/invitation-sidebar-failure.png', fullPage: true});
+  await page.locator('#cell-1').getByRole('button', {name: 'Discuss', exact: true}).click();
+  await page.getByLabel('Your feedback').fill('Review remains usable after list failure');
+  await page.getByRole('button', {name: 'Post feedback'}).click();
+  await expect(page.locator('#comments')).toContainText('Review remains usable after list failure');
+  expect(store.comments.some(comment => comment.body === 'Review remains usable after list failure')).toBe(true);
+  await page.getByRole('button', {name: 'Refresh project list', exact: true}).click();
+  await expect(page.locator('.project-item')).toContainText('Shared sample analysis');
+});
 test('local review, draft preservation, changed output and export', async ({page}) => {
   await page.goto('/'); await page.getByRole('button',{name:'Open example review →'}).click(); await expect(page.locator('.cell')).toHaveCount(4);
   await page.locator('#cell-1').getByRole('button',{name:'Discuss',exact:true}).click(); await page.getByLabel('Your feedback').fill('Please explain the missing value.');

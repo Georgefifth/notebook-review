@@ -58,7 +58,12 @@ async function openLocal(notebook, title, demo = false) {
 async function listProjects() {
   if (!state.api?.session) return;
   const session = state.api.session;
-  const projects = await state.api.request('review_projects', query({ select: 'id,title,owner_id,created_at', order: 'created_at.desc' }));
+  let projects;
+  try { projects = await state.api.request('review_projects', query({ select: 'id,title,owner_id,created_at', order: 'created_at.desc' })); }
+  catch (error) {
+    if (state.api.session?.user?.id !== session.user.id) throw error;
+    throw new Error('Your review list could not be loaded. Use Refresh project list to try again.');
+  }
   if (state.api.session?.user?.id !== session.user.id) return;
   const list = $('project-list'); list.replaceChildren();
   if (!projects.length) list.append(el('p', 'No online reviews yet. Import a Notebook or share the example.', 'empty'));
@@ -77,7 +82,7 @@ async function loadProject(id) {
   state.project = project; state.base = base; state.revision = revision; state.comments = comments; state.demo = false; state.filter = 'all'; $('cell-search').value = ''; resetSelection();
   const restoredDraft = recoveryDraft?.projectId === id && recoveryDraft.userId === state.api.session.user.id && base.cells.some(cell => cell.key === recoveryDraft.key);
   if (restoredDraft) { state.selected = recoveryDraft.key; $('comment-body').value = recoveryDraft.body; recoveryDraft = null; }
-  history.replaceState(null, '', appURL.pathname + '?project=' + id); render(); await listProjects(); notice(restoredDraft ? 'Review synchronized. Your unsent draft has been restored.' : 'Review synchronized.');
+  history.replaceState(null, '', appURL.pathname + '?project=' + id); render(); notice(restoredDraft ? 'Review synchronized. Your unsent draft has been restored.' : 'Review synchronized.'); await listProjects();
 }
 async function createOnlineProject() {
   if (!config) { openLogin(); return false; }
@@ -289,7 +294,7 @@ $('login-form').onsubmit = event => { event.preventDefault(); action(async () =>
   try {
     const email = $('email').value.trim().toLowerCase();
     if (!otpEmail) { await state.api.sendOTP(email); otpEmail = email; $('otp-step').hidden = false; $('otp-resend').hidden = false; $('otp').required = true; $('auth-submit').textContent = 'Verify and sign in'; $('auth-message').textContent = 'Code requested. Check your inbox and spam folder. If needed, reopen sign-in later.'; $('otp').focus(); }
-    else { await state.api.verifyOTP(otpEmail, $('otp').value.trim()); $('login-dialog').close(); resetOTP(); await action(async () => { await listProjects(); const id = new URLSearchParams(location.search).get('project'); if (id) await loadProject(id); notice('Signed in.'); }); }
+    else { await state.api.verifyOTP(otpEmail, $('otp').value.trim()); $('login-dialog').close(); resetOTP(); await action(async () => { const id = new URLSearchParams(location.search).get('project'); if (id) await loadProject(id); else await listProjects(); notice('Signed in.'); }); }
   } catch (error) { $('auth-message').textContent = error.message; }
   finally { $('auth-submit').disabled = false; }
 }); };
@@ -326,7 +331,7 @@ async function initialize() {
   if (config) state.api = new ReviewAPI(config, authUI);
   $('setup-note').textContent = config ? 'Sign in with an email code. Reviews are accessible only to their owner and invited emails.' : 'Online collaboration is not configured. Try the example or review locally. Sharing requires backend setup.';
   authUI();
-  if (state.api?.session) { await action(async () => { await listProjects(); const id = new URLSearchParams(location.search).get('project'); if (id) await loadProject(id); }); }
+  if (state.api?.session) { await action(async () => { const id = new URLSearchParams(location.search).get('project'); if (id) await loadProject(id); else await listProjects(); }); }
   else if (new URLSearchParams(location.search).has('project') && config) { notice('Sign in with your invited email to open this review.'); openLogin(); }
   // Backup reconciliation catches disconnects, missed events and revoked access.
   setInterval(() => { if (document.hidden) return; action(async () => { if (state.project?.id) await syncReview(); else if (state.api?.session) await listProjects(); }); }, 30000);
